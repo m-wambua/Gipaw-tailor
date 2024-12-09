@@ -1,0 +1,2 @@
+1. add reminder for when due dates are near (categories the neareness based on hours and days and weeks and months)
+2. 
