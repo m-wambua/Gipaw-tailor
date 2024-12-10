@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -18,117 +19,197 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-
+  final _namecontroller = TextEditingController();
+  final _phoneNumbercontroller = TextEditingController();
+  final _measurementsController = TextEditingController();
+  final _commentsController = TextEditingController();
   void _newPiece(String newClothing) async {
+    final _formKey = GlobalKey<FormState>();
+    List<Map<String, TextEditingController>> paymentPairs = [
+      {'deposit': TextEditingController(), 'balance': TextEditingController()}
+    ];
+
     await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-              scrollable: true,
-              title: Text('Create New Clothing Item'),
-              content: Form(
-                  child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                          child: TextFormField(
-                        decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (value) =>
-                            value!.isEmpty ? 'Please enter a name' : null,
-                      )),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                          child: TextFormField(
-                        decoration:
-                            const InputDecoration(labelText: 'Phone number'),
-                        validator: (value) => value!.isEmpty
-                            ? 'Please enter a phone number'
-                            : null,
-                      ))
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  TextFormField(
-                    maxLines: 10,
-                    decoration: const InputDecoration(
-                        labelText: 'Measurements',
-                        border: OutlineInputBorder()),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter measurements' : null,
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  ElevatedButton(
-                      onPressed: () {
-                        _addSample();
-                      },
-                      child: Text('Add Sample')),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Charges'),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter a charge' : null,
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          decoration:
-                              const InputDecoration(labelText: 'Deposit'),
+        builder: (BuildContext dialogContext) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AlertDialog(
+                scrollable: true,
+                title: Text('Create New Clothing Item'),
+                content: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                                child: TextFormField(
+                              decoration:
+                                  const InputDecoration(labelText: 'Name'),
+                              validator: (value) =>
+                                  value == null || value.isEmpty
+                                      ? 'Please enter a name'
+                                      : null,
+                            )),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Expanded(
+                                child: TextFormField(
+                              decoration: const InputDecoration(
+                                  labelText: 'Phone number'),
+                              validator: (value) =>
+                                  value == null || value.isEmpty
+                                      ? 'Please enter a phone number'
+                                      : null,
+                              keyboardType: TextInputType.phone,
+                            ))
+                          ],
                         ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                          child: TextFormField(
-                        decoration: InputDecoration(labelText: 'Balance'),
-                      )),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        TextFormField(
+                          maxLines: 10,
+                          decoration: const InputDecoration(
+                              labelText: 'Measurements',
+                              border: OutlineInputBorder()),
+                          validator: (value) => value!.isEmpty
+                              ? 'Please enter measurements'
+                              : null,
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                              _addSample();
+                            },
+                            child: Text('Add Sample')),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        TextFormField(
+                          decoration: InputDecoration(labelText: 'Charges'),
+                          validator: (value) =>
+                              value!.isEmpty ? 'Please enter a charge' : null,
+                        ),
+                        SizedBox(
+                          height: 10,
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        Column(
+                          children: [
+                            // Dynamic text fields going downwards
+                            Column(
+                              children:
+                                  paymentPairs.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                var pair = entry.value;
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: pair['deposit'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Deposit ${index + 1}',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: pair['balance'],
+                                          decoration: InputDecoration(
+                                            labelText: 'Balance ${index + 1}',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+
+                            // Add/Remove buttons
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        if (paymentPairs.length > 1) {
+                                          // Remove the last pair
+                                          paymentPairs.removeLast();
+                                        }
+                                      });
+                                    },
+                                    icon: Icon(Icons.remove)),
+                                IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        // Add a new pair of deposit and balance controllers
+                                        paymentPairs.add({
+                                          'deposit': TextEditingController(),
+                                          'balance': TextEditingController()
+                                        });
+                                      });
+                                    },
+                                    icon: Icon(Icons.add))
+                              ],
+                            )
+                          ],
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                              _schedulePickUp(context);
+                            },
+                            child: Text('Pick up date'))
+                      ],
+                    )),
+                actions: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                          onPressed: () {},
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.red),
+                          )),
+                      ElevatedButton(
+                          onPressed: () {},
+                          child: Text(
+                            'Save',
+                            style: TextStyle(color: Colors.green),
+                          ))
                     ],
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  ElevatedButton(
-                      onPressed: () {
-                        _schedulePickUp(context);
-                      },
-                      child: Text('Pick up date'))
+                  )
                 ],
-              )),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.red),
-                        )),
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: Text(
-                          'Save',
-                          style: TextStyle(color: Colors.green),
-                        ))
-                  ],
-                )
-              ],
-            ));
+              );
+            },
+          );
+        });
   }
 
   void _repair(String newClothing) async {
+    List<Map<String, TextEditingController>> paymentPairs = [
+      {'deposit': TextEditingController(), 'balance': TextEditingController()}
+    ];
+
     await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -187,21 +268,71 @@ class _MyHomePageState extends State<MyHomePage> {
                   SizedBox(
                     height: 10,
                   ),
-                  Row(
+                  Column(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          decoration:
-                              const InputDecoration(labelText: 'Deposit'),
-                        ),
+                      // Dynamic text fields going downwards
+                      Column(
+                        children: paymentPairs.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          var pair = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: pair['deposit'],
+                                    decoration: InputDecoration(
+                                      labelText: 'Deposit ${index + 1}',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: TextField(
+                                    controller: pair['balance'],
+                                    decoration: InputDecoration(
+                                      labelText: 'Balance ${index + 1}',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                          child: TextFormField(
-                        decoration: InputDecoration(labelText: 'Balance'),
-                      )),
+
+                      // Add/Remove buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  if (paymentPairs.length > 1) {
+                                    // Remove the last pair
+                                    paymentPairs.removeLast();
+                                  }
+                                });
+                              },
+                              icon: Icon(Icons.remove)),
+                          IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  // Add a new pair of deposit and balance controllers
+                                  paymentPairs.add({
+                                    'deposit': TextEditingController(),
+                                    'balance': TextEditingController()
+                                  });
+                                });
+                              },
+                              icon: Icon(Icons.add))
+                        ],
+                      )
                     ],
                   ),
                   const SizedBox(
