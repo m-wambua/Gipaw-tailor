@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -22,12 +24,37 @@ class _MyHomePageState extends State<MyHomePage> {
   final _namecontroller = TextEditingController();
   final _phoneNumbercontroller = TextEditingController();
   final _measurementsController = TextEditingController();
+  final _chargesController = TextEditingController();
   final _commentsController = TextEditingController();
+
+  List<ClothingItem> clothingItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClothingItems();
+  }
+
+  Future<void> _loadClothingItems() async {
+    try {
+      final loadedClothingItems = await ClotthingManager.loadClothingItems();
+      setState(() {
+        clothingItems = loadedClothingItems;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading clothing items')));
+    }
+  }
+
+  @override
   void _newPiece(String newClothing) async {
     final _formKey = GlobalKey<FormState>();
     List<Map<String, TextEditingController>> paymentPairs = [
       {'deposit': TextEditingController(), 'balance': TextEditingController()}
     ];
+
+    bool _materialOwner = false;
 
     await showDialog(
         context: context,
@@ -45,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           children: [
                             Expanded(
                                 child: TextFormField(
+                              controller: _namecontroller,
                               decoration:
                                   const InputDecoration(labelText: 'Name'),
                               validator: (value) =>
@@ -57,6 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                             Expanded(
                                 child: TextFormField(
+                              controller: _phoneNumbercontroller,
                               decoration: const InputDecoration(
                                   labelText: 'Phone number'),
                               validator: (value) =>
@@ -70,8 +99,36 @@ class _MyHomePageState extends State<MyHomePage> {
                         const SizedBox(
                           height: 10,
                         ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Radio(
+                              value: true,
+                              groupValue: _materialOwner,
+                              onChanged: (value) {
+                                setState(() {
+                                  _materialOwner = value!;
+                                });
+                              },
+                            ),
+                            Text("Customer Material"),
+                            Radio(
+                                value: false,
+                                groupValue: _materialOwner,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _materialOwner = value!;
+                                  });
+                                }),
+                            Text("Own Material"),
+                          ],
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         TextFormField(
                           maxLines: 10,
+                          controller: _measurementsController,
                           decoration: const InputDecoration(
                               labelText: 'Measurements',
                               border: OutlineInputBorder()),
@@ -91,6 +148,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           height: 10,
                         ),
                         TextFormField(
+                          controller: _chargesController,
                           decoration: InputDecoration(labelText: 'Charges'),
                           validator: (value) =>
                               value!.isEmpty ? 'Please enter a charge' : null,
@@ -175,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         ElevatedButton(
                             onPressed: () {
-                              _schedulePickUp(context);
+                              _schedulePickUp();
                             },
                             child: Text('Pick up date'))
                       ],
@@ -191,7 +249,35 @@ class _MyHomePageState extends State<MyHomePage> {
                             style: TextStyle(color: Colors.red),
                           )),
                       ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              List<PaymentEntry> payments = paymentPairs
+                                  .map((pair) => PaymentEntry(
+                                      deposit: pair['deposit']!.text,
+                                      balance: pair['balance']!.text))
+                                  .toList();
+                              ClothingItem newItem = ClothingItem(
+                                name: _namecontroller.text,
+                                phoneNumber: _phoneNumbercontroller.text,
+                                materialOwner: _materialOwner,
+                                measurements: _measurementsController.text,
+                                charges: _chargesController.text,
+                                paymentEntries: payments,
+                              );
+                              setState(() {
+                                clothingItems.add(newItem);
+                              });
+
+                              String clothingItemName =
+                                  ClothingItemIdentifier.generateIdentifier(
+                                      _namecontroller.text,
+                                      _phoneNumbercontroller.text);
+                              ClotthingManager.saveClothingItem(clothingItems);
+                            }
+                            setState(() {
+                              _loadClothingItems();
+                            });
+                          },
                           child: Text(
                             'Save',
                             style: TextStyle(color: Colors.green),
@@ -340,7 +426,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   ElevatedButton(
                       onPressed: () {
-                        _schedulePickUp(context);
+                        _schedulePickUp();
                       },
                       child: Text('Pick up date'))
                 ],
@@ -369,7 +455,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _addSample() async {
     showDialog(
-        context: context,
+        context: context as BuildContext,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Add sample'),
@@ -433,9 +519,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  Future<void> _schedulePickUp(
-    BuildContext context,
-  ) async {
+  Future<void> _schedulePickUp() async {
     DateTime selectedDate = DateTime.now();
     TimeOfDay selectedTime = const TimeOfDay(hour: 8, minute: 0);
 
@@ -519,35 +603,50 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text("Welcome to Gipaw Tailor"),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
+      body: Column(children: [
+        Expanded(
+            child: clothingItems.isEmpty
+                ? const Center(
+                    child:
+                        Text('No Clothing Item added yet. Add your first one!'),
+                  )
+                : ListView.builder(
+                    itemCount: clothingItems.length,
+                    itemBuilder: (context, index) {
+                      final clothingItem = clothingItems[index];
+                      return GestureDetector(
+                        child: Card(
+                          child: ExpansionTile(
+                            title: Text(clothingItem.name),
+                            subtitle: Text(
+                                'Phone Number: ${clothingItem.phoneNumber}'),
+                            children: [
+                              ListTile(
+                                title: Text(
+                                    'Material Owner ${clothingItem.materialOwner}'),
+                              ),
+                              ListTile(
+                                title: Text(
+                                    'Measurements: ${clothingItem.measurements}'),
+                              ),
+                              ListTile(
+                                title: Text('Charged: ${clothingItem.charges}'),
+                              ),
+                              ListTile(
+                                title: Text(
+                                    'Deposit Paid ${clothingItem.paymentEntries}'),
+                              ),
+                              ListTile(
+                                title: Text(
+                                    'Balance: ${clothingItem.paymentEntries}'),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    }))
+      ]),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _newOrRepare();
