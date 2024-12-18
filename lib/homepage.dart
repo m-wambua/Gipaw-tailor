@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -228,6 +229,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             )
                           ],
                         ),
+                        ElevatedButton(
+                            onPressed: () {
+                              _promptPayment();
+                            },
+                            child: Text('Prompt Payment')),
                         const SizedBox(
                           height: 10,
                         ),
@@ -298,7 +304,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
     await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (BuildContext dialogContext) {
+          return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
               scrollable: true,
               title: Text('Create New Clothing Item'),
               content: Form(
@@ -421,6 +430,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       )
                     ],
                   ),
+                  ElevatedButton(
+                      onPressed: () {
+                        _promptPayment();
+                      },
+                      child: Text('Prompt Payment')),
                   const SizedBox(
                     height: 10,
                   ),
@@ -450,7 +464,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 )
               ],
-            ));
+            );
+          });
+        });
   }
 
   Future<void> _addSample() async {
@@ -598,10 +614,21 @@ class _MyHomePageState extends State<MyHomePage> {
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text("Welcome to Gipaw Tailor"),
+        actions: [
+          IconButton(
+              onPressed: () {
+                _uniformSales();
+              },
+              icon: Icon(Icons.school)),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.curtains),
+          ),
+        ],
       ),
       body: Column(children: [
         Expanded(
@@ -655,5 +682,223 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  Future<void> _uniformSales() async {
+    // List to hold multiple entries
+    List<Map<String, dynamic>> entries = [];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void addNewEntry() {
+              setState(() {
+                entries.add({
+                  'selectedUniformItem': null,
+                  'selectedColor': null,
+                  'availableColors': [],
+                  'numberController': TextEditingController(),
+                });
+              });
+            }
+
+            void removeEntry(int index) {
+              setState(() {
+                entries.removeAt(index);
+              });
+            }
+
+            return AlertDialog(
+              title: Text("Uniform Sales"),
+              content: Container(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Scrollable List of Entries
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              children: [
+                                // Dropdown for Uniform Item
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration: InputDecoration(
+                                        labelText: "Uniform Item"),
+                                    items: uniformItems.map((String item) {
+                                      return DropdownMenuItem<String>(
+                                        value: item,
+                                        child: Text(item),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedUniformItem'] =
+                                            newValue;
+                                        entries[index]['availableColors'] =
+                                            uniformItemColors[newValue!] ?? [];
+                                        entries[index]['selectedColor'] = null;
+                                      });
+                                    },
+                                    value: entries[index]
+                                        ['selectedUniformItem'],
+                                  ),
+                                ),
+                                SizedBox(width: 10), // Spacing
+
+                                // Dropdown for Color
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Color"),
+                                    items: entries[index]['availableColors']
+                                        .map<DropdownMenuItem<String>>((color) {
+                                      return DropdownMenuItem<String>(
+                                        value: color,
+                                        child: Text(color),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedColor'] =
+                                            newValue;
+                                      });
+                                    },
+                                    value: entries[index]['selectedColor'],
+                                  ),
+                                ),
+                                SizedBox(width: 10), // Spacing
+
+                                // TextField for Number
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: entries[index]
+                                        ['numberController'],
+                                    decoration:
+                                        InputDecoration(labelText: "Number"),
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Enter a number';
+                                      }
+                                      if (int.tryParse(value) == null) {
+                                        return 'Only whole numbers allowed';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.remove_circle,
+                                      color: Colors.red),
+                                  onPressed: () => removeEntry(index),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 10), // Spacing
+
+                    // Add Button
+                    TextButton.icon(
+                      icon: Icon(Icons.add, color: Colors.green),
+                      label: Text("Add"),
+                      onPressed: addNewEntry,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Handle submission of all entries
+                    bool isValid = true;
+
+                    // Validate each entry
+                    for (var entry in entries) {
+                      if (entry['selectedUniformItem'] == null ||
+                          entry['selectedColor'] == null ||
+                          entry['numberController'].text.isEmpty ||
+                          int.tryParse(entry['numberController'].text) ==
+                              null) {
+                        isValid = false;
+                        break;
+                      }
+                    }
+
+                    if (isValid) {
+                      // Process all entries
+                      for (var entry in entries) {
+                        print('Item: ${entry['selectedUniformItem']}');
+                        print('Color: ${entry['selectedColor']}');
+                        print('Number: ${entry['numberController'].text}');
+                      }
+
+                      Navigator.of(context).pop(); // Close the dialog
+                    } else {
+                      // Show an error message or handle invalid input
+                      print('Ensure all fields are filled with valid inputs.');
+                    }
+                  },
+                  child: Text("Submit"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: Text("Cancel"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _promptPayment() async {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Prompt Payment'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    decoration:
+                        InputDecoration(labelText: "Enter phone Number"),
+                  ),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: "Enter amount"),
+                  ),
+                ],
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('cancel')),
+                    ElevatedButton(onPressed: () {}, child: Text('Prompt'))
+                  ],
+                )
+              ],
+            );
+          });
+        });
   }
 }
