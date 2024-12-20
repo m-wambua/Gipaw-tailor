@@ -685,6 +685,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _uniformSales() async {
+    // Extract the uniform items from the data
+    final uniformItems = uniformItemData.keys.toList();
+
     // List to hold multiple entries
     List<Map<String, dynamic>> entries = [];
 
@@ -698,7 +701,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 entries.add({
                   'selectedUniformItem': null,
                   'selectedColor': null,
+                  'selectedSize': null,
                   'availableColors': [],
+                  'availableSizes': [],
                   'numberController': TextEditingController(),
                 });
               });
@@ -717,7 +722,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Scrollable List of Entries
                     Flexible(
                       child: ListView.builder(
                         shrinkWrap: true,
@@ -727,7 +731,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             padding: const EdgeInsets.only(bottom: 8.0),
                             child: Row(
                               children: [
-                                // Dropdown for Uniform Item
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     decoration: InputDecoration(
@@ -743,17 +746,20 @@ class _MyHomePageState extends State<MyHomePage> {
                                         entries[index]['selectedUniformItem'] =
                                             newValue;
                                         entries[index]['availableColors'] =
-                                            uniformItemColors[newValue!] ?? [];
+                                            uniformItemData[newValue]![
+                                                'colors']!;
+                                        entries[index]['availableSizes'] =
+                                            uniformItemData[newValue]![
+                                                'sizes']!;
                                         entries[index]['selectedColor'] = null;
+                                        entries[index]['selectedSize'] = null;
                                       });
                                     },
                                     value: entries[index]
                                         ['selectedUniformItem'],
                                   ),
                                 ),
-                                SizedBox(width: 10), // Spacing
-
-                                // Dropdown for Color
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     decoration:
@@ -774,9 +780,28 @@ class _MyHomePageState extends State<MyHomePage> {
                                     value: entries[index]['selectedColor'],
                                   ),
                                 ),
-                                SizedBox(width: 10), // Spacing
-
-                                // TextField for Number
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Size"),
+                                    items: entries[index]['availableSizes']
+                                        .map<DropdownMenuItem<String>>((size) {
+                                      return DropdownMenuItem<String>(
+                                        value: size,
+                                        child: Text(size),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedSize'] =
+                                            newValue;
+                                      });
+                                    },
+                                    value: entries[index]['selectedSize'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: TextFormField(
                                     controller: entries[index]
@@ -806,9 +831,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         },
                       ),
                     ),
-                    SizedBox(height: 10), // Spacing
-
-                    // Add Button
+                    SizedBox(height: 10),
                     TextButton.icon(
                       icon: Icon(Icons.add, color: Colors.green),
                       label: Text("Add"),
@@ -820,10 +843,7 @@ class _MyHomePageState extends State<MyHomePage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    // Handle submission of all entries
                     bool isValid = true;
-
-                    // Validate each entry
                     for (var entry in entries) {
                       if (entry['selectedUniformItem'] == null ||
                           entry['selectedColor'] == null ||
@@ -836,16 +856,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
 
                     if (isValid) {
-                      // Process all entries
                       for (var entry in entries) {
                         print('Item: ${entry['selectedUniformItem']}');
                         print('Color: ${entry['selectedColor']}');
+                        print('Size ${entry['selectedSize']}');
                         print('Number: ${entry['numberController'].text}');
                       }
-
-                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.of(context).pop();
                     } else {
-                      // Show an error message or handle invalid input
                       print('Ensure all fields are filled with valid inputs.');
                     }
                   },
@@ -853,7 +871,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop();
                   },
                   child: Text("Cancel"),
                 ),

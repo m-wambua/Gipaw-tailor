@@ -1,13 +1,26 @@
-// This file contains the uniform-related data for dropdowns
-
-// Map of uniform items to their respective colors
-const Map<String, List<String>> uniformItemColors = {
-  'Shirts': ['Red', 'Blue', 'White'],
-  'Dresses': ['Green', 'White', 'Black'],
-  'Shorts': ['Black', 'Blue', 'White'],
-  'Tracksuits': ['Red', 'Green', 'Blue'],
-  'Fleece Jackets': ['White', 'Black'],
+const Map<String, Map<String, List<String>>> uniformItemData = {
+  'Shirts': {
+    'colors': ['Red', 'Blue', 'White'],
+    'sizes': ['18', '20', '22', '24']
+  },
+  'Dresses': {
+    'colors': ['Green', 'White', 'Black'],
+    'sizes': ['18', '20', '22', '24']
+  },
+  'Shorts': {
+    'colors': ['Black', 'Blue', 'White'],
+    'sizes': ['18', '20', '22', '24']
+  },
+  'Socks': {
+    'colors': ['White', 'Black'],
+    'sizes': ['Small', 'Medium', 'Large', 'Extra Large']
+  },
 };
 
-// List of uniform items
-List<String> uniformItems = uniformItemColors.keys.toList();
+// Update how `uniformItemColors` and `uniformItemSizes` are extracted
+final uniformItemColors = {
+  for (var key in uniformItemData.keys) key: uniformItemData[key]!['colors']!
+};
+final uniformItemSizes = {
+  for (var key in uniformItemData.keys) key: uniformItemData[key]!['sizes']!
+};
