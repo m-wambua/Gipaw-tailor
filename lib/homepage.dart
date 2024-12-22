@@ -702,8 +702,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   'selectedUniformItem': null,
                   'selectedColor': null,
                   'selectedSize': null,
+                  'selectedPrize': null,
                   'availableColors': [],
                   'availableSizes': [],
+                  'availablePrizes': [],
                   'numberController': TextEditingController(),
                 });
               });
@@ -751,8 +753,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                         entries[index]['availableSizes'] =
                                             uniformItemData[newValue]![
                                                 'sizes']!;
+                                        entries[index]['availablePrizes'] =
+                                            uniformItemData[newValue]![
+                                                'prizes']!;
                                         entries[index]['selectedColor'] = null;
                                         entries[index]['selectedSize'] = null;
+                                        entries[index]['selectedPrize'] = null;
                                       });
                                     },
                                     value: entries[index]
@@ -820,6 +826,28 @@ class _MyHomePageState extends State<MyHomePage> {
                                     },
                                   ),
                                 ),
+                                SizedBox(
+                                  width: 10,
+                                ),
+                                Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                  decoration:
+                                      InputDecoration(labelText: "Prize"),
+                                  items: entries[index]['availablePrizes']
+                                      .map<DropdownMenuItem<String>>((size) {
+                                    return DropdownMenuItem<String>(
+                                      value: size,
+                                      child: Text(size),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      entries[index]['selectedPrize'] =
+                                          newValue;
+                                    });
+                                  },
+                                  value: entries[index]['selectedPrize'],
+                                )),
                                 IconButton(
                                   icon: Icon(Icons.remove_circle,
                                       color: Colors.red),
