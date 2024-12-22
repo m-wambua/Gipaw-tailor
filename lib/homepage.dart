@@ -707,6 +707,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   'availableSizes': [],
                   'availablePrizes': [],
                   'numberController': TextEditingController(),
+                  'calculatedPrice': 0,
                 });
               });
             }
@@ -715,6 +716,24 @@ class _MyHomePageState extends State<MyHomePage> {
               setState(() {
                 entries.removeAt(index);
               });
+            }
+
+            void updateCalculatedPrice(int index) {
+              final entry = entries[index];
+              final selectedPrize =
+                  int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
+              final quantity =
+                  int.tryParse(entry['numberController'].text.trim()) ?? 0;
+              setState(() {
+                entry['calculatedPrice'] = selectedPrize * quantity;
+              });
+            }
+
+            int calculateTotalPrice() {
+              return entries.fold<int>(
+                0,
+                (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
+              );
             }
 
             return AlertDialog(
@@ -759,6 +778,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         entries[index]['selectedColor'] = null;
                                         entries[index]['selectedSize'] = null;
                                         entries[index]['selectedPrize'] = null;
+                                        updateCalculatedPrice(index);
                                       });
                                     },
                                     value: entries[index]
@@ -815,6 +835,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                     decoration:
                                         InputDecoration(labelText: "Number"),
                                     keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      updateCalculatedPrice(index);
+                                    },
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Enter a number';
@@ -826,28 +849,43 @@ class _MyHomePageState extends State<MyHomePage> {
                                     },
                                   ),
                                 ),
-                                SizedBox(
-                                  width: 10,
-                                ),
+                                SizedBox(width: 10),
                                 Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                  decoration:
-                                      InputDecoration(labelText: "Prize"),
-                                  items: entries[index]['availablePrizes']
-                                      .map<DropdownMenuItem<String>>((size) {
-                                    return DropdownMenuItem<String>(
-                                      value: size,
-                                      child: Text(size),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
-                                    setState(() {
-                                      entries[index]['selectedPrize'] =
-                                          newValue;
-                                    });
-                                  },
-                                  value: entries[index]['selectedPrize'],
-                                )),
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Prize"),
+                                    items: entries[index]['availablePrizes']
+                                        .map<DropdownMenuItem<String>>((prize) {
+                                      return DropdownMenuItem<String>(
+                                        value: prize,
+                                        child: Text(prize),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedPrize'] =
+                                            newValue;
+                                        updateCalculatedPrice(index);
+                                      });
+                                    },
+                                    value: entries[index]['selectedPrize'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: TextFormField(
+                                    readOnly: true,
+                                    decoration: InputDecoration(
+                                      labelText: "Price",
+                                    ),
+                                    initialValue: entries[index]
+                                            ['calculatedPrice']
+                                        .toString(),
+                                    onChanged: (value) {
+                                      setState(() {});
+                                    },
+                                  ),
+                                ),
                                 IconButton(
                                   icon: Icon(Icons.remove_circle,
                                       color: Colors.red),
@@ -864,6 +902,14 @@ class _MyHomePageState extends State<MyHomePage> {
                       icon: Icon(Icons.add, color: Colors.green),
                       label: Text("Add"),
                       onPressed: addNewEntry,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Total: ${calculateTotalPrice()}",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -887,8 +933,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       for (var entry in entries) {
                         print('Item: ${entry['selectedUniformItem']}');
                         print('Color: ${entry['selectedColor']}');
-                        print('Size ${entry['selectedSize']}');
+                        print('Size: ${entry['selectedSize']}');
                         print('Number: ${entry['numberController'].text}');
+                        print('Price: ${entry['calculatedPrice']}');
                       }
                       Navigator.of(context).pop();
                     } else {
