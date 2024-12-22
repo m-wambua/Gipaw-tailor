@@ -707,6 +707,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   'availableSizes': [],
                   'availablePrizes': [],
                   'numberController': TextEditingController(),
+                  'priceController': TextEditingController(),
                   'calculatedPrice': 0,
                 });
               });
@@ -724,8 +725,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
               final quantity =
                   int.tryParse(entry['numberController'].text.trim()) ?? 0;
+              final calculatedPrice = selectedPrize * quantity;
+
               setState(() {
-                entry['calculatedPrice'] = selectedPrize * quantity;
+                entry['calculatedPrice'] = calculatedPrice;
+                entry['priceController'].text = calculatedPrice.toString();
               });
             }
 
@@ -875,15 +879,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                 Expanded(
                                   child: TextFormField(
                                     readOnly: true,
+                                    controller: entries[index]
+                                        ['priceController'],
                                     decoration: InputDecoration(
                                       labelText: "Price",
                                     ),
-                                    initialValue: entries[index]
-                                            ['calculatedPrice']
-                                        .toString(),
-                                    onChanged: (value) {
-                                      setState(() {});
-                                    },
                                   ),
                                 ),
                                 IconButton(
