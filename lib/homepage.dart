@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -628,6 +629,11 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {},
             icon: Icon(Icons.curtains),
           ),
+          TextButton(
+              onPressed: () {
+                _uniformStock();
+              },
+              child: Text("Add Stock"))
         ],
       ),
       body: Column(children: [
@@ -993,5 +999,263 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           });
         });
+  }
+
+  Future<void> _uniformStock() async {
+    final uniformItems = uniformItemData.keys.toList();
+
+    // List to hold multiple entries
+    List<Map<String, dynamic>> entries = [];
+    final stockManager = StockManager('lib/uniforms/stock/stock.json');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void addNewEntry() {
+              setState(() {
+                entries.add({
+                  'selectedUniformItem': null,
+                  'selectedColor': null,
+                  'selectedSize': null,
+                  'selectedPrize': null,
+                  'availableColors': [],
+                  'availableSizes': [],
+                  'availablePrizes': [],
+                  'numberController': TextEditingController(),
+                  'priceController': TextEditingController(),
+                  'calculatedPrice': 0,
+                });
+              });
+            }
+
+            void removeEntry(int index) {
+              setState(() {
+                entries.removeAt(index);
+              });
+            }
+
+            void updateCalculatedPrice(int index) {
+              final entry = entries[index];
+              final selectedPrize =
+                  int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
+              final quantity =
+                  int.tryParse(entry['numberController'].text.trim()) ?? 0;
+              final calculatedPrice = selectedPrize * quantity;
+
+              setState(() {
+                entry['calculatedPrice'] = calculatedPrice;
+                entry['priceController'].text = calculatedPrice.toString();
+              });
+            }
+
+            int calculateTotalPrice() {
+              return entries.fold<int>(
+                0,
+                (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
+              );
+            }
+
+            return AlertDialog(
+              title: Text("Uniform Sales"),
+              content: Container(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration: InputDecoration(
+                                        labelText: "Uniform Item"),
+                                    items: uniformItems.map((String item) {
+                                      return DropdownMenuItem<String>(
+                                        value: item,
+                                        child: Text(item),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedUniformItem'] =
+                                            newValue;
+                                        entries[index]['availableColors'] =
+                                            uniformItemData[newValue]![
+                                                'colors']!;
+                                        entries[index]['availableSizes'] =
+                                            uniformItemData[newValue]![
+                                                'sizes']!;
+                                        entries[index]['availablePrizes'] =
+                                            uniformItemData[newValue]![
+                                                'prizes']!;
+                                        entries[index]['selectedColor'] = null;
+                                        entries[index]['selectedSize'] = null;
+                                        entries[index]['selectedPrize'] = null;
+                                        updateCalculatedPrice(index);
+                                      });
+                                    },
+                                    value: entries[index]
+                                        ['selectedUniformItem'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Color"),
+                                    items: entries[index]['availableColors']
+                                        .map<DropdownMenuItem<String>>((color) {
+                                      return DropdownMenuItem<String>(
+                                        value: color,
+                                        child: Text(color),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedColor'] =
+                                            newValue;
+                                      });
+                                    },
+                                    value: entries[index]['selectedColor'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Size"),
+                                    items: entries[index]['availableSizes']
+                                        .map<DropdownMenuItem<String>>((size) {
+                                      return DropdownMenuItem<String>(
+                                        value: size,
+                                        child: Text(size),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedSize'] =
+                                            newValue;
+                                      });
+                                    },
+                                    value: entries[index]['selectedSize'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: entries[index]
+                                        ['numberController'],
+                                    decoration:
+                                        InputDecoration(labelText: "Number"),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      updateCalculatedPrice(index);
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Enter a number';
+                                      }
+                                      if (int.tryParse(value) == null) {
+                                        return 'Only whole numbers allowed';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    decoration:
+                                        InputDecoration(labelText: "Prize"),
+                                    items: entries[index]['availablePrizes']
+                                        .map<DropdownMenuItem<String>>((prize) {
+                                      return DropdownMenuItem<String>(
+                                        value: prize,
+                                        child: Text(prize),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        entries[index]['selectedPrize'] =
+                                            newValue;
+                                        updateCalculatedPrice(index);
+                                      });
+                                    },
+                                    value: entries[index]['selectedPrize'],
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                IconButton(
+                                  icon: Icon(Icons.remove_circle,
+                                      color: Colors.red),
+                                  onPressed: () => removeEntry(index),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    TextButton.icon(
+                      icon: Icon(Icons.add, color: Colors.green),
+                      label: Text("Add"),
+                      onPressed: addNewEntry,
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    bool isValid = true;
+                    for (var entry in entries) {
+                      if (entry['selectedUniformItem'] == null ||
+                          entry['selectedColor'] == null ||
+                          entry['numberController'].text.isEmpty ||
+                          int.tryParse(entry['numberController'].text) ==
+                              null) {
+                        isValid = false;
+                        break;
+                      }
+                    }
+
+                    if (isValid) {
+                      await stockManager.addNewStock(entries);
+                      for (var entry in entries) {
+                        print('Item: ${entry['selectedUniformItem']}');
+                        print('Color: ${entry['selectedColor']}');
+                        print('Size: ${entry['selectedSize']}');
+                        print('Number: ${entry['numberController'].text}');
+                        print('Price: ${entry['calculatedPrice']}');
+                      }
+                      Navigator.of(context).pop();
+                    } else {
+                      print('Ensure all fields are filled with valid inputs.');
+                    }
+                  },
+                  child: Text("Submit"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("Cancel"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }
