@@ -1,9 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
 import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
+import 'package:path_provider/path_provider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -28,6 +33,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final _measurementsController = TextEditingController();
   final _chargesController = TextEditingController();
   final _commentsController = TextEditingController();
+  String stockPath = 'lib/uniforms/stock/stock.json';
 
   List<ClothingItem> clothingItems = [];
 
@@ -633,7 +639,16 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 _uniformStock();
               },
-              child: Text("Add Stock"))
+              child: Text("Add Stock")),
+          TextButton(
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            StockViewWrapper(stockFilePath: stockPath)));
+              },
+              child: Text('View Stock'))
         ],
       ),
       body: Column(children: [
@@ -1058,7 +1073,7 @@ class _MyHomePageState extends State<MyHomePage> {
             }
 
             return AlertDialog(
-              title: Text("Uniform Sales"),
+              title: Text("Uniform Stock"),
               content: Container(
                 width: double.maxFinite,
                 child: Column(
@@ -1173,8 +1188,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        InputDecoration(labelText: "Prize"),
+                                    decoration: InputDecoration(
+                                        labelText: "Unit Prize"),
                                     items: entries[index]['availablePrizes']
                                         .map<DropdownMenuItem<String>>((prize) {
                                       return DropdownMenuItem<String>(
@@ -1236,6 +1251,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         print('Color: ${entry['selectedColor']}');
                         print('Size: ${entry['selectedSize']}');
                         print('Number: ${entry['numberController'].text}');
+
                         print('Price: ${entry['calculatedPrice']}');
                       }
                       Navigator.of(context).pop();
