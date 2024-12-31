@@ -22,6 +22,7 @@ class _StockViewWrapperState extends State<StockViewWrapper> {
   late StockManager _stockManager;
   List<StockItem> _stockItems = [];
   bool _isLoading = true;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _StockViewWrapperState extends State<StockViewWrapper> {
     _stockManager = StockManager(widget.stockFilePath);
     // Wait a brief moment for the stock to load
     await Future.delayed(Duration(milliseconds: 100));
+
     setState(() {
       _stockItems = _stockManager.currentStock;
       _isLoading = false;
@@ -148,7 +150,7 @@ class _StockViewPageState extends State<StockViewPage> {
                         DataColumn(label: Text("Color")),
                         DataColumn(label: Text("Size")),
                         DataColumn(label: Text("Quantity")),
-                        DataColumn(label: Text("Price")),
+                        DataColumn(label: Text("Unit Price")),
                         DataColumn(label: Text("Total Value")),
                         DataColumn(label: Text("Date Added")),
                         DataColumn(label: Text("Actions")),
@@ -160,8 +162,8 @@ class _StockViewPageState extends State<StockViewPage> {
                                   DataCell(Text(item.color)),
                                   DataCell(Text(item.size)),
                                   DataCell(Text(item.quantity.toString())),
-                                  DataCell(Text(
-                                      currencyFormatter.format(item.price))),
+                                  DataCell(Text(currencyFormatter
+                                      .format((item.price / item.quantity)))),
                                   DataCell(Text(
                                       currencyFormatter.format(item.price))),
                                   DataCell(Text(item.date)),
@@ -479,6 +481,29 @@ class _StockViewPageState extends State<StockViewPage> {
                         print('Price: ${entry['calculatedPrice']}');
                       }
                       Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              CircularProgressIndicator.adaptive(),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Text("Updating Stock...")
+                            ],
+                          ),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                      await widget.onRefresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Stock updated successfully",
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
                     } else {
                       print('Ensure all fields are filled with valid inputs.');
                     }

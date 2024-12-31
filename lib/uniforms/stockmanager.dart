@@ -106,6 +106,20 @@ class StockManager {
 
     await _saveStock();
   }
+  Future<void> reloadStock() async{
+    try{
+      final file=File(filePath);
+      if(await file.exists()){
+        final contents=await file.readAsString();
+        final List<dynamic> jsonList=json.decode(contents);
+        _stockItems=jsonList.map((item)=>StockItem.fromJson(item)).toList();
+      }else{
+        throw Exception('File not found');
+      }
+    } catch (e){
+      print('Error reloading stock: $e');
+    }
+  }
 
   Future<bool> processSale(List<Map<String, dynamic>> saleEntries) async {
     // First verify if we have enough stock
