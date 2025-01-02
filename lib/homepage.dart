@@ -626,20 +626,21 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text("Welcome to Gipaw Tailor"),
         actions: [
-          IconButton(
-              onPressed: () {
-                _uniformSales();
-              },
-              icon: Icon(Icons.school)),
-          IconButton(
+          TextButton(
+            onPressed: () {
+              _uniformSales();
+            },
+            child: Text("Sell Uniform"),
+          ),
+          TextButton(
             onPressed: () {},
-            icon: Icon(Icons.curtains),
+            child: Text("Sell Curtains"),
           ),
           TextButton(
               onPressed: () {
-                _uniformStock();
+                _newOrRepare();
               },
-              child: Text("Add Stock")),
+              child: Text("Sell New Clothes")),
           TextButton(
               onPressed: () {
                 Navigator.push(
@@ -687,6 +688,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               ListTile(
                                 title: Text(
                                     'Balance: ${clothingItem.paymentEntries}'),
+                              ),
+                              ListTile(
+                                title: Text(
+                                    'Pick Up date: ${clothingItem.pickUpDate?.toIso8601String()}'),
                               )
                             ],
                           ),
