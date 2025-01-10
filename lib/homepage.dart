@@ -713,6 +713,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _uniformSales() async {
     // Extract the uniform items from the data
     final uniformItems = uniformItemData.keys.toList();
+    final stockManager = StockManager('lib/uniforms/stock/stock.json');
 
     // List to hold multiple entries
     List<Map<String, dynamic>> entries = [];
@@ -764,6 +765,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 0,
                 (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
               );
+            }
+
+            Future<void> processSaleAndUpdateStock() async {
+              try {
+                bool success = await stockManager.processSale(entries);
+                if (success) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Row(
+                      children: [
+                        CircularProgressIndicator.adaptive(),
+                        SizedBox(
+                          width: 10,
+                        ),
+                        Text('Processing sale...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 1),
+                  ));
+
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Sale processed successfully'),
+                    backgroundColor: Colors.green,
+                  ));
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Error processing sale'),
+                  backgroundColor: Colors.red,
+                ));
+              }
             }
 
             return AlertDialog(
@@ -942,11 +974,16 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
+                  onPressed: () {},
+                  child: Text('Send Quote'),
+                ),
+                TextButton(
+                  onPressed: () async {
                     bool isValid = true;
                     for (var entry in entries) {
                       if (entry['selectedUniformItem'] == null ||
                           entry['selectedColor'] == null ||
+                          entry['selectedSize'] == null ||
                           entry['numberController'].text.isEmpty ||
                           int.tryParse(entry['numberController'].text) ==
                               null) {
@@ -956,19 +993,18 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
 
                     if (isValid) {
-                      for (var entry in entries) {
-                        print('Item: ${entry['selectedUniformItem']}');
-                        print('Color: ${entry['selectedColor']}');
-                        print('Size: ${entry['selectedSize']}');
-                        print('Number: ${entry['numberController'].text}');
-                        print('Price: ${entry['calculatedPrice']}');
-                      }
-                      Navigator.of(context).pop();
+                      await processSaleAndUpdateStock();
                     } else {
-                      print('Ensure all fields are filled with valid inputs.');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              Text('Please fill all fields with valid inputs'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
                     }
                   },
-                  child: Text("Submit"),
+                  child: Text("Process Sale"),
                 ),
                 TextButton(
                   onPressed: () {
@@ -982,6 +1018,299 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       },
     );
+  }
+
+  Future<void> _uniformSales2() async {
+    final uniformItems = uniformItemData.keys.toList();
+    List<Map<String, dynamic>> entries = [];
+    final stockManager = StockManager('lib/uniforms/stock.json');
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setState) {
+            void addNewEntry() {
+              setState(() {
+                entries.add({
+                  'selectedUniformItem': null,
+                  'selectedColor': null,
+                  'selectedSize': null,
+                  'selectedPrize': null,
+                  'availableColors': [],
+                  'availableSizes': [],
+                  'availablePrizes': [],
+                  'numberController': TextEditingController(),
+                  'priceController': TextEditingController(),
+                  'calculatedPrice': 0,
+                });
+              });
+            }
+
+            void removeEntry(int index) {
+              setState(() {
+                entries.removeAt(index);
+              });
+            }
+
+            void updateCalculatedPrice(int index) {
+              final entry = entries[index];
+              final selectedPrize =
+                  int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
+              final quantity =
+                  int.tryParse(entry['numberController'].text.trim()) ?? 0;
+              final calculatedPrice = selectedPrize * quantity;
+
+              setState(() {
+                entry['calculatedPrice'] = calculatedPrice;
+                entry['priceController'].text = calculatedPrice.toString();
+              });
+            }
+
+            int calculateTotalPrice() {
+              return entries.fold<int>(
+                0,
+                (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
+              );
+            }
+
+            Future<void> processSaleAndUpdateStock() async {
+              try {
+                bool success = await stockManager.processSale(entries);
+                if (success) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Row(
+                      children: [
+                        CircularProgressIndicator.adaptive(),
+                        SizedBox(
+                          width: 10,
+                        ),
+                        Text('Processing sale...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 1),
+                  ));
+
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Sale processed successfully'),
+                    backgroundColor: Colors.green,
+                  ));
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Error processing sale'),
+                  backgroundColor: Colors.red,
+                ));
+              }
+            }
+
+            return AlertDialog(
+              title: Text("Uniform Sales"),
+              content: Container(
+                  width: double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                          child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: entries.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                              labelText: "Uniform Item"),
+                                          items:
+                                              uniformItems.map((String item) {
+                                            return DropdownMenuItem<String>(
+                                              value: item,
+                                              child: Text(item),
+                                            );
+                                          }).toList(),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              entries[index]
+                                                      ['selectedUniformItem'] =
+                                                  newValue;
+                                              entries[index]
+                                                      ['availableColors'] =
+                                                  uniformItemData[newValue]![
+                                                      'colors']!;
+                                              entries[index]['availableSizes'] =
+                                                  uniformItemData[newValue]![
+                                                      'sizes']!;
+                                              entries[index]
+                                                      ['availablePrizes'] =
+                                                  uniformItemData[newValue]![
+                                                      'prizes']!;
+                                              entries[index]['selectedColor'] =
+                                                  null;
+                                              entries[index]['selectedSize'] =
+                                                  null;
+                                              entries[index]['selectedPrize'] =
+                                                  null;
+                                              updateCalculatedPrice(index);
+                                            });
+                                          },
+                                          value: entries[index]
+                                              ['selectedUniformItem'],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                              labelText: "Color"),
+                                          items: entries[index]
+                                                  ['availableColors']
+                                              .map<DropdownMenuItem<String>>(
+                                                  (color) {
+                                            return DropdownMenuItem<String>(
+                                              value: color,
+                                              child: Text(color),
+                                            );
+                                          }).toList(),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              entries[index]['selectedColor'] =
+                                                  newValue;
+                                            });
+                                          },
+                                          value: entries[index]
+                                              ['selectedColor'],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                              labelText: "Size"),
+                                          items: entries[index]
+                                                  ['availableSizes']
+                                              .map<DropdownMenuItem<String>>(
+                                                  (size) {
+                                            return DropdownMenuItem<String>(
+                                              value: size,
+                                              child: Text(size),
+                                            );
+                                          }).toList(),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              entries[index]['selectedSize'] =
+                                                  newValue;
+                                            });
+                                          },
+                                          value: entries[index]['selectedSize'],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: entries[index]
+                                              ['numberController'],
+                                          decoration: InputDecoration(
+                                              labelText: "Number"),
+                                          keyboardType: TextInputType.number,
+                                          onChanged: (value) {
+                                            updateCalculatedPrice(index);
+                                          },
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Enter a number';
+                                            }
+                                            if (int.tryParse(value) == null) {
+                                              return 'Only whole numbers allowed';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          decoration: InputDecoration(
+                                              labelText: "Prize"),
+                                          items: entries[index]
+                                                  ['availablePrizes']
+                                              .map<DropdownMenuItem<String>>(
+                                                  (prize) {
+                                            return DropdownMenuItem<String>(
+                                              value: prize,
+                                              child: Text(prize),
+                                            );
+                                          }).toList(),
+                                          onChanged: (String? newValue) {
+                                            setState(() {
+                                              entries[index]['selectedPrize'] =
+                                                  newValue;
+                                              updateCalculatedPrice(index);
+                                            });
+                                          },
+                                          value: entries[index]
+                                              ['selectedPrize'],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: TextFormField(
+                                          readOnly: true,
+                                          controller: entries[index]
+                                              ['priceController'],
+                                          decoration: InputDecoration(
+                                            labelText: "Price",
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.remove_circle,
+                                            color: Colors.red),
+                                        onPressed: () => removeEntry(index),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }))
+                    ],
+                  )),
+              actions: [
+                TextButton(onPressed: () {}, child: Text("Send Quote")),
+                TextButton(
+                    onPressed: () async {
+                      bool isValid = true;
+                      for (var entry in entries) {
+                        if (entry['selectedUnifromItme'] == null ||
+                            entry['selectedColor'] == null ||
+                            entry['selectedSize'] == null ||
+                            entry['numberController'].text.isEmpty ||
+                            int.tryParse(entry['numberController'].text) ==
+                                null) {
+                          isValid = false;
+                          break;
+                        }
+                      }
+                      if (isValid) {
+                        await processSaleAndUpdateStock();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                                'Ensure all fields are filled with valid inputs')));
+                      }
+                    },
+                    child: Text('Process Sale')),
+                TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text("Cancel"))
+              ],
+            );
+          });
+        });
   }
 
   Future<void> _promptPayment() async {
