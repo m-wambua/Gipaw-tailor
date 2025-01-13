@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
+import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
 import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
@@ -653,7 +654,14 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Text('View Stock')),
           TextButton(
             child: Text("Sales"),
-            onPressed: () {},
+            onPressed: () {
+              
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SalesViewWrapper(
+                          salesFilePath: 'lib/uniforms/sales/sales.json')));
+            },
           )
         ],
       ),
@@ -1001,7 +1009,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       await processSaleAndUpdateStock();
                       final salesManager =
                           SalesManager('lib/uniforms/sales/sales.json');
-                       await salesManager.processSale(entries);
+                      await salesManager.processSale(entries);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
