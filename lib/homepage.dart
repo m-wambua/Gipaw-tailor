@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
@@ -655,12 +656,18 @@ class _MyHomePageState extends State<MyHomePage> {
           TextButton(
             child: Text("Sales"),
             onPressed: () {
-              
               Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => SalesViewWrapper(
                           salesFilePath: 'lib/uniforms/sales/sales.json')));
+            },
+          ),
+          TextButton(
+            child: Text("Reminders"),
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => ReminderPage()));
             },
           )
         ],

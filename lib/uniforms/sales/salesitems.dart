@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-
 class SaleItem {
   final String saleId;
   final String uniformItem;
@@ -55,7 +54,6 @@ class SaleItem {
 
 // Sales Manager class to handle data operations
 
-
 class SalesManager {
   final String filePath;
   List<SaleItem> currentSales = [];
@@ -74,10 +72,10 @@ class SalesManager {
         currentSales = jsonList.map((json) => SaleItem.fromJson(json)).toList();
         // Sort sales by date, most recent first
         currentSales.sort((a, b) => b.date.compareTo(a.date));
+        print('Loaded ${currentSales.length} sales from file'); // Debug print
       }
     } catch (e) {
       print('Error loading sales data: $e');
-      // Initialize with empty list if file doesn't exist or has errors
       currentSales = [];
     }
   }
@@ -85,8 +83,12 @@ class SalesManager {
   Future<void> saveSales() async {
     try {
       final file = File(filePath);
+
+      // Always save the current sales list directly
       final jsonList = currentSales.map((sale) => sale.toJson()).toList();
       await file.writeAsString(json.encode(jsonList));
+
+      print('Saved ${currentSales.length} sales to file'); // Debug print
     } catch (e) {
       print('Error saving sales data: $e');
       throw Exception('Failed to save sales data');
@@ -97,10 +99,16 @@ class SalesManager {
     try {
       final dateFormatter = DateFormat('yyyy-MM-dd HH:mm');
       final currentDate = dateFormatter.format(DateTime.now());
-      
+
+      print('Processing ${saleEntries.length} new sales'); // Debug print
+
+      // First, load the latest sales data
+      await loadSales();
+
+      // Create and add new sales items
       for (var entry in saleEntries) {
         final saleItem = SaleItem(
-          saleId: _uuid.v4(), // Generate unique ID for each sale
+          saleId: _uuid.v4(),
           uniformItem: entry['selectedUniformItem'],
           color: entry['selectedColor'],
           size: entry['selectedSize'] ?? 'N/A',
@@ -109,10 +117,15 @@ class SalesManager {
           totalPrice: entry['calculatedPrice'],
           date: currentDate,
         );
-        
-        currentSales.add(saleItem);
+
+        // Add to the beginning of the list since we sort by most recent
+        currentSales.insert(0, saleItem);
       }
-      
+
+      print(
+          'Current sales count after adding: ${currentSales.length}'); // Debug print
+
+      // Save the updated list
       await saveSales();
       return true;
     } catch (e) {
@@ -123,28 +136,24 @@ class SalesManager {
 
   // Get total sales for a specific date range
   double getSalesInRange(DateTime startDate, DateTime endDate) {
-    return currentSales
-        .where((sale) {
-          final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
-          return saleDate.isAfter(startDate) && saleDate.isBefore(endDate);
-        })
-        .fold(0.0, (sum, sale) => sum + sale.totalPrice);
+    return currentSales.where((sale) {
+      final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
+      return saleDate.isAfter(startDate) && saleDate.isBefore(endDate);
+    }).fold(0.0, (sum, sale) => sum + sale.totalPrice);
   }
 
   // Get total items sold for a specific date range
   int getItemsSoldInRange(DateTime startDate, DateTime endDate) {
-    return currentSales
-        .where((sale) {
-          final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
-          return saleDate.isAfter(startDate) && saleDate.isBefore(endDate);
-        })
-        .fold(0, (sum, sale) => sum + sale.quantity);
+    return currentSales.where((sale) {
+      final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
+      return saleDate.isAfter(startDate) && saleDate.isBefore(endDate);
+    }).fold(0, (sum, sale) => sum + sale.quantity);
   }
 
   // Get sales summary by uniform item
   Map<String, dynamic> getSalesSummaryByItem() {
     final summary = <String, dynamic>{};
-    
+
     for (var sale in currentSales) {
       if (!summary.containsKey(sale.uniformItem)) {
         summary[sale.uniformItem] = {
@@ -153,12 +162,12 @@ class SalesManager {
           'sales': 0,
         };
       }
-      
+
       summary[sale.uniformItem]['totalQuantity'] += sale.quantity;
       summary[sale.uniformItem]['totalValue'] += sale.totalPrice;
       summary[sale.uniformItem]['sales']++;
     }
-    
+
     return summary;
   }
 
@@ -167,20 +176,22 @@ class SalesManager {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(Duration(days: 1));
-    
+
     final dailySales = currentSales.where((sale) {
       final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
       return saleDate.isAfter(startOfDay) && saleDate.isBefore(endOfDay);
     }).toList();
-    
-    final totalRevenue = dailySales.fold(0, (sum, sale) => sum + sale.totalPrice);
+
+    final totalRevenue =
+        dailySales.fold(0, (sum, sale) => sum + sale.totalPrice);
     final totalItems = dailySales.fold(0, (sum, sale) => sum + sale.quantity);
-    
+
     return {
       'totalSales': dailySales.length,
       'totalRevenue': totalRevenue,
       'totalItems': totalItems,
-      'averageOrderValue': dailySales.isEmpty ? 0 : totalRevenue / dailySales.length,
+      'averageOrderValue':
+          dailySales.isEmpty ? 0 : totalRevenue / dailySales.length,
     };
   }
 
@@ -194,19 +205,20 @@ class SalesManager {
   }) {
     return currentSales.where((sale) {
       bool matches = true;
-      
+
       if (uniformItem != null) {
-        matches = matches && sale.uniformItem.toLowerCase().contains(uniformItem.toLowerCase());
+        matches = matches &&
+            sale.uniformItem.toLowerCase().contains(uniformItem.toLowerCase());
       }
-      
+
       if (color != null) {
         matches = matches && sale.color.toLowerCase() == color.toLowerCase();
       }
-      
+
       if (size != null) {
         matches = matches && sale.size.toLowerCase() == size.toLowerCase();
       }
-      
+
       if (startDate != null || endDate != null) {
         final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);
         if (startDate != null) {
@@ -216,7 +228,7 @@ class SalesManager {
           matches = matches && saleDate.isBefore(endDate);
         }
       }
-      
+
       return matches;
     }).toList();
   }
@@ -244,9 +256,10 @@ class SalesManager {
       };
     }
 
-    final totalRevenue = currentSales.fold(0, (sum, sale) => sum + sale.totalPrice);
+    final totalRevenue =
+        currentSales.fold(0, (sum, sale) => sum + sale.totalPrice);
     final totalItems = currentSales.fold(0, (sum, sale) => sum + sale.quantity);
-    
+
     return {
       'totalRevenue': totalRevenue,
       'totalItems': totalItems,
