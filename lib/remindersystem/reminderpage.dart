@@ -12,6 +12,7 @@ class _ReminderPageState extends State<ReminderPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ReminderManager _reminderManager;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -20,6 +21,31 @@ class _ReminderPageState extends State<ReminderPage>
         reminderFilePath: 'lib/remindersystem/reminders.json',
         embroideryFilePath: 'lib/remindersystem/embroidery.json');
     _tabController = TabController(length: 3, vsync: this);
+    _initializeData();
+  }
+
+   Future<void> _initializeData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Wait for both reminders and embroidery items to load
+      await _reminderManager.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error initializing data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

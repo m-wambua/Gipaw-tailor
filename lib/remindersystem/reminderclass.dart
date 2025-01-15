@@ -131,49 +131,57 @@ class ReminderManager {
     await loadEmbroideryItems();
   }
 
+  Future<void> initialize() async {
+    await Future.wait([
+      loadReminders(),
+      loadEmbroideryItems(),
+    ]);
+  }
 
-  Future<void>loadReminders() async{
-    try{
-      final file=File(reminderFilePath);
-      if(await file.exists()){
-        final jsonString =await file.readAsString();
-        final List<dynamic> jsonList=json.decode(jsonString);
-        reminders=jsonList.map((e) => ReminderItem.fromJson(e)).toList();
+  Future<void> loadReminders() async {
+    try {
+      final file = File(reminderFilePath);
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        reminders = jsonList.map((e) => ReminderItem.fromJson(e)).toList();
       }
-    } catch(e){
+    } catch (e) {
       print('Error loading reminders: $e');
-      reminders=[];
-    }
-  }
-  Future<void>loadEmbroideryItems() async{
-    try{
-      final file=File(embroideryFilePath);
-      if(await file.exists()){
-        final jsonString =await file.readAsString();
-        final List<dynamic> jsonList=json.decode(jsonString);
-        embroideries=jsonList.map((e) => EmbroideryItem.fromJson(e)).toList();
-      }
-    } catch(e){
-      print('Error loading embroidery items: $e');
-      embroideries=[];
+      reminders = [];
     }
   }
 
-  Future<void> saveReminders() async{
-    try{
-      final file= File(reminderFilePath);
-      final jsonList=reminders.map((item)=>item.toJson()).toList();
+  Future<void> loadEmbroideryItems() async {
+    try {
+      final file = File(embroideryFilePath);
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        embroideries = jsonList.map((e) => EmbroideryItem.fromJson(e)).toList();
+      }
+    } catch (e) {
+      print('Error loading embroidery items: $e');
+      embroideries = [];
+    }
+  }
+
+  Future<void> saveReminders() async {
+    try {
+      final file = File(reminderFilePath);
+      final jsonList = reminders.map((item) => item.toJson()).toList();
       await file.writeAsString(json.encode(jsonList));
-    } catch(e){
+    } catch (e) {
       print('Error saving reminders: $e');
     }
   }
-  Future<void> saveEmbroideryItems() async{
-    try{
-      final file= File(embroideryFilePath);
-      final jsonList=embroideries.map((item)=>item.toJson()).toList();
+
+  Future<void> saveEmbroideryItems() async {
+    try {
+      final file = File(embroideryFilePath);
+      final jsonList = embroideries.map((item) => item.toJson()).toList();
       await file.writeAsString(json.encode(jsonList));
-    } catch(e){
+    } catch (e) {
       print('Error saving embroidery items: $e');
     }
   }
@@ -195,15 +203,14 @@ class ReminderManager {
     reminders.add(reminder);
     await saveReminders();
   }
+
   Future<void> addEmbroideryItem({
     required String uniformItem,
     required String color,
     required String size,
     required int quantity,
     required String shopName,
-    
-    
-    EmbroideryStatus status=EmbroideryStatus.pending,
+    EmbroideryStatus status = EmbroideryStatus.pending,
     String? notes,
   }) async {
     final embroideryItem = EmbroideryItem(
@@ -220,11 +227,12 @@ class ReminderManager {
     await saveEmbroideryItems();
   }
 
-  Future<void> updateEmbroideryStatus(String id, EmbroideryStatus status) async {
+  Future<void> updateEmbroideryStatus(
+      String id, EmbroideryStatus status) async {
     final embroideryItem = embroideries.firstWhere((e) => e.id == id);
     embroideryItem.status = status;
-    if (status==EmbroideryStatus.returned){
-      embroideryItem.returnDate=DateTime.now();
+    if (status == EmbroideryStatus.returned) {
+      embroideryItem.returnDate = DateTime.now();
     }
     await saveEmbroideryItems();
   }
