@@ -45,6 +45,26 @@ class StockManager {
     _loadStock();
   }
 
+  StockStatus checkStockStatus(String uniformItem, String color, String size) {
+    try {
+      final item = _stockItems.firstWhere(
+        (item) =>
+            item.uniformItem == uniformItem &&
+            item.color == color &&
+            item.size == size,
+        orElse: () => throw Exception('Item not found'),
+      );
+      
+      if (item.quantity == 0) {
+        return StockStatus.outOfStock;
+      } else if (item.quantity <= 3) {
+        return StockStatus.low;
+      }
+      return StockStatus.available;
+    } catch (e) {
+      return StockStatus.outOfStock;
+    }
+  }
   Future<void> _loadStock() async {
     try {
       final file = File(filePath);
@@ -106,17 +126,18 @@ class StockManager {
 
     await _saveStock();
   }
-  Future<void> reloadStock() async{
-    try{
-      final file=File(filePath);
-      if(await file.exists()){
-        final contents=await file.readAsString();
-        final List<dynamic> jsonList=json.decode(contents);
-        _stockItems=jsonList.map((item)=>StockItem.fromJson(item)).toList();
-      }else{
+
+  Future<void> reloadStock() async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(contents);
+        _stockItems = jsonList.map((item) => StockItem.fromJson(item)).toList();
+      } else {
         throw Exception('File not found');
       }
-    } catch (e){
+    } catch (e) {
       print('Error reloading stock: $e');
     }
   }
@@ -171,4 +192,25 @@ class StockManager {
   }
 
   List<StockItem> get currentStock => _stockItems;
+
+    int getCurrentStock(String uniformItem, String color, String size) {
+    try {
+      final item = _stockItems.firstWhere(
+        (item) =>
+            item.uniformItem == uniformItem &&
+            item.color == color &&
+            item.size == size,
+      );
+      return item.quantity;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+}
+
+enum StockStatus {
+  available,
+  low,
+  outOfStock,
 }

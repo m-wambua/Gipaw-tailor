@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
@@ -734,7 +735,9 @@ class _MyHomePageState extends State<MyHomePage> {
     // Extract the uniform items from the data
     final uniformItems = uniformItemData.keys.toList();
     final stockManager = StockManager('lib/uniforms/stock/stock.json');
-
+    final reminderManager = ReminderManager(
+        reminderFilePath: 'lib/remindersystem/reminders.json',
+        embroideryFilePath: 'lib/remindersystem/embroidery.json');
     // List to hold multiple entries
     List<Map<String, dynamic>> entries = [];
 
@@ -818,6 +821,91 @@ class _MyHomePageState extends State<MyHomePage> {
               }
             }
 
+            Widget _buildStockStatus(Map<String, dynamic> entry) {
+              if (entry['selectedUniformItem'] == null ||
+                  entry['selectedColor'] == null ||
+                  entry['selectedSize'] == null) {
+                return SizedBox.shrink();
+              }
+
+              final stockStatus = stockManager.checkStockStatus(
+                  entry['selectedUniformItem'],
+                  entry['selectedColor'],
+                  entry['selectedSize']);
+
+              final currentStock = stockManager.getCurrentStock(
+                  entry['selectedUniformItem'],
+                  entry['selectedColor'],
+                  entry['selectedSize']);
+
+              switch (stockStatus) {
+                case StockStatus.outOfStock:
+                  return Container(
+                    margin: EdgeInsets.only(top: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Text(
+                      'Out of Stock',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  );
+
+                case StockStatus.low:
+                  return Container(
+                    margin: EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Stock: $currentStock',
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                        SizedBox(width: 12),
+                        TextButton.icon(
+                          icon: Icon(Icons.warning_amber_rounded, size: 18),
+                          label: Text('Request Item'),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Colors.orange.shade50,
+                            foregroundColor: Colors.orange.shade900,
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                          ),
+                          onPressed: () async {
+                            await reminderManager.addReminder(
+                              type: ReminderType.stockAlert,
+                              title:
+                                  'Low Stock Alert: ${entry['selectedUniformItem']}',
+                              description: 'Color: ${entry['selectedColor']}\n'
+                                  'Size: ${entry['selectedSize']}\n'
+                                  'Current Stock: $currentStock',
+                              dueDate: null,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Stock request reminder created'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+
+                case StockStatus.available:
+                  return Container(
+                    margin: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Stock: $currentStock',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  );
+              }
+            }
+
             return AlertDialog(
               title: Text("Uniform Sales"),
               content: Container(
@@ -830,147 +918,162 @@ class _MyHomePageState extends State<MyHomePage> {
                         shrinkWrap: true,
                         itemCount: entries.length,
                         itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
-                                        labelText: "Uniform Item"),
-                                    items: uniformItems.map((String item) {
-                                      return DropdownMenuItem<String>(
-                                        value: item,
-                                        child: Text(item),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        entries[index]['selectedUniformItem'] =
-                                            newValue;
-                                        entries[index]['availableColors'] =
-                                            uniformItemData[newValue]![
-                                                'colors']!;
-                                        entries[index]['availableSizes'] =
-                                            uniformItemData[newValue]![
-                                                'sizes']!;
-                                        entries[index]['availablePrizes'] =
-                                            uniformItemData[newValue]![
-                                                'prizes']!;
-                                        entries[index]['selectedColor'] = null;
-                                        entries[index]['selectedSize'] = null;
-                                        entries[index]['selectedPrize'] = null;
-                                        updateCalculatedPrice(index);
-                                      });
-                                    },
-                                    value: entries[index]
-                                        ['selectedUniformItem'],
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        InputDecoration(labelText: "Color"),
-                                    items: entries[index]['availableColors']
-                                        .map<DropdownMenuItem<String>>((color) {
-                                      return DropdownMenuItem<String>(
-                                        value: color,
-                                        child: Text(color),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        entries[index]['selectedColor'] =
-                                            newValue;
-                                      });
-                                    },
-                                    value: entries[index]['selectedColor'],
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        InputDecoration(labelText: "Size"),
-                                    items: entries[index]['availableSizes']
-                                        .map<DropdownMenuItem<String>>((size) {
-                                      return DropdownMenuItem<String>(
-                                        value: size,
-                                        child: Text(size),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        entries[index]['selectedSize'] =
-                                            newValue;
-                                      });
-                                    },
-                                    value: entries[index]['selectedSize'],
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: entries[index]
-                                        ['numberController'],
-                                    decoration:
-                                        InputDecoration(labelText: "Number"),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (value) {
-                                      updateCalculatedPrice(index);
-                                    },
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Enter a number';
-                                      }
-                                      if (int.tryParse(value) == null) {
-                                        return 'Only whole numbers allowed';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        InputDecoration(labelText: "Prize"),
-                                    items: entries[index]['availablePrizes']
-                                        .map<DropdownMenuItem<String>>((prize) {
-                                      return DropdownMenuItem<String>(
-                                        value: prize,
-                                        child: Text(prize),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      setState(() {
-                                        entries[index]['selectedPrize'] =
-                                            newValue;
-                                        updateCalculatedPrice(index);
-                                      });
-                                    },
-                                    value: entries[index]['selectedPrize'],
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    readOnly: true,
-                                    controller: entries[index]
-                                        ['priceController'],
-                                    decoration: InputDecoration(
-                                      labelText: "Price",
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        decoration: InputDecoration(
+                                            labelText: "Uniform Item"),
+                                        items: uniformItems.map((String item) {
+                                          return DropdownMenuItem<String>(
+                                            value: item,
+                                            child: Text(item),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            entries[index]
+                                                    ['selectedUniformItem'] =
+                                                newValue;
+                                            entries[index]['availableColors'] =
+                                                uniformItemData[newValue]![
+                                                    'colors']!;
+                                            entries[index]['availableSizes'] =
+                                                uniformItemData[newValue]![
+                                                    'sizes']!;
+                                            entries[index]['availablePrizes'] =
+                                                uniformItemData[newValue]![
+                                                    'prizes']!;
+                                            entries[index]['selectedColor'] =
+                                                null;
+                                            entries[index]['selectedSize'] =
+                                                null;
+                                            entries[index]['selectedPrize'] =
+                                                null;
+                                            updateCalculatedPrice(index);
+                                          });
+                                        },
+                                        value: entries[index]
+                                            ['selectedUniformItem'],
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        decoration:
+                                            InputDecoration(labelText: "Color"),
+                                        items: entries[index]['availableColors']
+                                            .map<DropdownMenuItem<String>>(
+                                                (color) {
+                                          return DropdownMenuItem<String>(
+                                            value: color,
+                                            child: Text(color),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            entries[index]['selectedColor'] =
+                                                newValue;
+                                          });
+                                        },
+                                        value: entries[index]['selectedColor'],
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        decoration:
+                                            InputDecoration(labelText: "Size"),
+                                        items: entries[index]['availableSizes']
+                                            .map<DropdownMenuItem<String>>(
+                                                (size) {
+                                          return DropdownMenuItem<String>(
+                                            value: size,
+                                            child: Text(size),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            entries[index]['selectedSize'] =
+                                                newValue;
+                                          });
+                                        },
+                                        value: entries[index]['selectedSize'],
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: entries[index]
+                                            ['numberController'],
+                                        decoration: InputDecoration(
+                                            labelText: "Number"),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (value) {
+                                          updateCalculatedPrice(index);
+                                        },
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Enter a number';
+                                          }
+                                          if (int.tryParse(value) == null) {
+                                            return 'Only whole numbers allowed';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: DropdownButtonFormField<String>(
+                                        decoration:
+                                            InputDecoration(labelText: "Prize"),
+                                        items: entries[index]['availablePrizes']
+                                            .map<DropdownMenuItem<String>>(
+                                                (prize) {
+                                          return DropdownMenuItem<String>(
+                                            value: prize,
+                                            child: Text(prize),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            entries[index]['selectedPrize'] =
+                                                newValue;
+                                            updateCalculatedPrice(index);
+                                          });
+                                        },
+                                        value: entries[index]['selectedPrize'],
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextFormField(
+                                        readOnly: true,
+                                        controller: entries[index]
+                                            ['priceController'],
+                                        decoration: InputDecoration(
+                                          labelText: "Price",
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.remove_circle,
+                                          color: Colors.red),
+                                      onPressed: () => removeEntry(index),
+                                    ),
+                                  ],
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.remove_circle,
-                                      color: Colors.red),
-                                  onPressed: () => removeEntry(index),
-                                ),
-                              ],
-                            ),
+                              ),
+                              Padding(
+                                  padding: EdgeInsets.only(left: 8, bottom: 16),
+                                  child: _buildStockStatus(entries[index]))
+                            ],
                           );
                         },
                       ),
