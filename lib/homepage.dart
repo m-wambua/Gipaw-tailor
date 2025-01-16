@@ -670,7 +670,8 @@ class _MyHomePageState extends State<MyHomePage> {
               Navigator.push(context,
                   MaterialPageRoute(builder: (context) => ReminderPage()));
             },
-          )
+          ),
+          TextButton(onPressed: () {}, child: Text("Contacts"))
         ],
       ),
       body: Column(children: [

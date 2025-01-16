@@ -85,6 +85,36 @@ class _StockViewPageState extends State<StockViewPage> {
     decimalDigits: 0,
   );
 
+  Widget _buildStatusIndicator(int quanity) {
+    Color backgroundColor;
+    Color textColor = Colors.white;
+    String statusText;
+
+    if (quanity <= 0) {
+      backgroundColor = Colors.red;
+      statusText = "Out of Stock";
+    } else if (quanity <= 5) {
+      backgroundColor = Colors.orange;
+      statusText = "Low Stock";
+    } else {
+      backgroundColor = Colors.green;
+      statusText = "In Stock";
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(
+            color: textColor, fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,7 +140,7 @@ class _StockViewPageState extends State<StockViewPage> {
                       Colors.blue,
                     ),
                     _buildSummaryCard(
-                      "Total QUantity",
+                      "Total Quantity",
                       widget.stockItems
                           .fold<int>(
                             0,
@@ -125,7 +155,7 @@ class _StockViewPageState extends State<StockViewPage> {
                       currencyFormatter.format(
                         widget.stockItems.fold<int>(
                           0,
-                          (sum, item) => sum + (item.price),
+                          (sum, item) => sum + (item.price * item.quantity),
                         ),
                       ),
                       Icons.attach_money,
@@ -151,6 +181,7 @@ class _StockViewPageState extends State<StockViewPage> {
                         DataColumn(label: Text("Size")),
                         DataColumn(label: Text("Quantity")),
                         DataColumn(label: Text("Unit Price")),
+                        DataColumn(label: Text('Stock Status')),
                         DataColumn(label: Text("Total Value")),
                         DataColumn(label: Text("Date Added")),
                         DataColumn(label: Text("Actions")),
@@ -162,10 +193,12 @@ class _StockViewPageState extends State<StockViewPage> {
                                   DataCell(Text(item.color)),
                                   DataCell(Text(item.size)),
                                   DataCell(Text(item.quantity.toString())),
-                                  DataCell(Text(currencyFormatter
-                                      .format((item.price / item.quantity)))),
                                   DataCell(Text(
-                                      currencyFormatter.format(item.price))),
+                                      currencyFormatter.format((item.price)))),
+                                  DataCell(
+                                      _buildStatusIndicator(item.quantity)),
+                                  DataCell(Text(currencyFormatter
+                                      .format(item.price * item.quantity))),
                                   DataCell(Text(item.date)),
                                   DataCell(Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -478,7 +511,7 @@ class _StockViewPageState extends State<StockViewPage> {
                         print('Size: ${entry['selectedSize']}');
                         print('Number: ${entry['numberController'].text}');
 
-                        print('Price: ${entry['calculatedPrice']}');
+                        print('Price: ${entry['selectedPrize']}');
                       }
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(

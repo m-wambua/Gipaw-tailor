@@ -54,7 +54,7 @@ class StockManager {
             item.size == size,
         orElse: () => throw Exception('Item not found'),
       );
-      
+
       if (item.quantity == 0) {
         return StockStatus.outOfStock;
       } else if (item.quantity <= 3) {
@@ -65,6 +65,7 @@ class StockManager {
       return StockStatus.outOfStock;
     }
   }
+
   Future<void> _loadStock() async {
     try {
       final file = File(filePath);
@@ -179,11 +180,6 @@ class StockManager {
           price: currentItem.price,
           date: currentItem.date,
         );
-
-        // Remove item if quantity becomes 0
-        if (_stockItems[itemIndex].quantity == 0) {
-          _stockItems.removeAt(itemIndex);
-        }
       }
     }
 
@@ -193,7 +189,7 @@ class StockManager {
 
   List<StockItem> get currentStock => _stockItems;
 
-    int getCurrentStock(String uniformItem, String color, String size) {
+  int getCurrentStock(String uniformItem, String color, String size) {
     try {
       final item = _stockItems.firstWhere(
         (item) =>
@@ -206,7 +202,6 @@ class StockManager {
       return 0;
     }
   }
-
 }
 
 enum StockStatus {
