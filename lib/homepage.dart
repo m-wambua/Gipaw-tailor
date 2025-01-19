@@ -67,7 +67,9 @@ class _MyHomePageState extends State<MyHomePage> {
     List<Map<String, TextEditingController>> paymentPairs = [
       {'deposit': TextEditingController(), 'balance': TextEditingController()}
     ];
-
+    List<Map<String, TextEditingController>> measurementPairs = [
+      {'part': TextEditingController(), 'measurement': TextEditingController()}
+    ];
     bool _materialOwner = false;
 
     await showDialog(
@@ -113,6 +115,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         const SizedBox(
                           height: 10,
                         ),
+                        TextFormField(
+                          decoration: InputDecoration(
+                              labelText: "email", border: OutlineInputBorder()),
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -139,6 +148,63 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         const SizedBox(
                           height: 10,
+                        ),
+                        Column(
+                          children:
+                              measurementPairs.asMap().entries.map((entry) {
+                            var pair = entry.value;
+                            return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Row(children: [
+                                  Expanded(
+                                      child: TextField(
+                                    controller: pair['part'],
+                                    decoration: InputDecoration(
+                                        labelText: 'Part',
+                                        border: OutlineInputBorder()),
+                                    keyboardType: TextInputType.name,
+                                  )),
+                                  SizedBox(
+                                    width: 10,
+                                  ),
+                                  Expanded(
+                                      child: TextField(
+                                    controller: pair['measurement'],
+                                    decoration: InputDecoration(
+                                        labelText: "Measurement",
+                                        border: OutlineInputBorder()),
+                                    keyboardType: TextInputType.number,
+                                  ))
+                                ]));
+                          }).toList(),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (measurementPairs.length > 1) {
+                                      measurementPairs.removeLast();
+                                    }
+                                  });
+                                },
+                                icon: Icon(Icons.remove)),
+                            IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    measurementPairs.add({
+                                      'part': TextEditingController(),
+                                      'measurement': TextEditingController()
+                                    });
+                                  });
+                                },
+                                icon: Icon(Icons.add))
+                          ],
+                        ),
+                        SizedBox(
+                          height: 5,
                         ),
                         TextFormField(
                           maxLines: 10,
@@ -354,11 +420,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     height: 10,
                   ),
                   TextFormField(
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                        labelText: 'comments', border: OutlineInputBorder()),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter comment' : null,
+                    decoration: InputDecoration(
+                        labelText: "email", border: OutlineInputBorder()),
+                  ),
+                  SizedBox(
+                    height: 5,
                   ),
                   Column(
                     children: measurementPairs.asMap().entries.map((entry) {
@@ -414,6 +480,13 @@ class _MyHomePageState extends State<MyHomePage> {
                           },
                           icon: Icon(Icons.add))
                     ],
+                  ),
+                  TextFormField(
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                        labelText: 'comments', border: OutlineInputBorder()),
+                    validator: (value) =>
+                        value!.isEmpty ? 'Please enter comment' : null,
                   ),
                   const SizedBox(
                     height: 10,
