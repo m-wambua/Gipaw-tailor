@@ -314,6 +314,9 @@ class _MyHomePageState extends State<MyHomePage> {
     List<Map<String, TextEditingController>> paymentPairs = [
       {'deposit': TextEditingController(), 'balance': TextEditingController()}
     ];
+    List<Map<String, TextEditingController>> measurementPairs = [
+      {'part': TextEditingController(), 'measurement': TextEditingController()}
+    ];
 
     await showDialog(
         context: context,
@@ -356,6 +359,61 @@ class _MyHomePageState extends State<MyHomePage> {
                         labelText: 'comments', border: OutlineInputBorder()),
                     validator: (value) =>
                         value!.isEmpty ? 'Please enter comment' : null,
+                  ),
+                  Column(
+                    children: measurementPairs.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      var pair = entry.value;
+                      return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: TextField(
+                                controller: pair['part'],
+                                decoration: InputDecoration(
+                                    labelText: 'Part',
+                                    border: OutlineInputBorder()),
+                                keyboardType: TextInputType.name,
+                              )),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Expanded(
+                                  child: TextField(
+                                controller: pair['measurement'],
+                                decoration: InputDecoration(
+                                    labelText: 'Measurement',
+                                    border: OutlineInputBorder()),
+                                keyboardType: TextInputType.number,
+                              ))
+                            ],
+                          ));
+                    }).toList(),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                          onPressed: () {
+                            setState(() {
+                              if (measurementPairs.length > 1) {
+                                measurementPairs.removeLast();
+                              }
+                            });
+                          },
+                          icon: Icon(Icons.remove)),
+                      IconButton(
+                          onPressed: () {
+                            setState(() {
+                              measurementPairs.add({
+                                'part': TextEditingController(),
+                                'measurement': TextEditingController()
+                              });
+                            });
+                          },
+                          icon: Icon(Icons.add))
+                    ],
                   ),
                   const SizedBox(
                     height: 10,
