@@ -39,6 +39,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final _commentsController = TextEditingController();
   String stockPath = 'lib/uniforms/stock/stock.json';
 
+  final double sidebarWidth = 250.0;
+
   List<ClothingItem> clothingItems = [];
 
   @override
@@ -629,98 +631,122 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text("Welcome to Gipaw Tailor"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _uniformSales();
-            },
-            child: Text("Sell Uniform"),
+        actions: [],
+      ),
+      body: Row(
+        children: [
+          Container(
+            width: sidebarWidth,
+            color: Theme.of(context).colorScheme.surface,
+            child: Column(
+              children: [
+                Expanded(
+                    child: ListView(padding: EdgeInsets.zero, children: [
+                  TextButton(
+                    onPressed: () {
+                      _uniformSales();
+                    },
+                    child: Text("Sell Uniform"),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("Sell Curtains"),
+                  ),
+                  TextButton(
+                      onPressed: () {
+                        _newOrRepare();
+                      },
+                      child: Text("Sell New Clothes")),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => StockViewWrapper(
+                                    stockFilePath: stockPath)));
+                      },
+                      child: Text('View Stock')),
+                  TextButton(
+                    child: Text("Sales"),
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SalesViewWrapper(
+                                  salesFilePath:
+                                      'lib/uniforms/sales/sales.json')));
+                    },
+                  ),
+                  TextButton(
+                    child: Text("Reminders"),
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ReminderPage()));
+                    },
+                  ),
+                  TextButton(onPressed: () {}, child: Text("Contacts"))
+                ]))
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {},
-            child: Text("Sell Curtains"),
+          VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: Theme.of(context).dividerColor,
           ),
-          TextButton(
-              onPressed: () {
-                _newOrRepare();
-              },
-              child: Text("Sell New Clothes")),
-          TextButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            StockViewWrapper(stockFilePath: stockPath)));
-              },
-              child: Text('View Stock')),
-          TextButton(
-            child: Text("Sales"),
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => SalesViewWrapper(
-                          salesFilePath: 'lib/uniforms/sales/sales.json')));
-            },
-          ),
-          TextButton(
-            child: Text("Reminders"),
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => ReminderPage()));
-            },
-          ),
-          TextButton(onPressed: () {}, child: Text("Contacts"))
+          Expanded(
+              child: Column(children: [
+            Expanded(
+                child: clothingItems.isEmpty
+                    ? const Center(
+                        child: Text(
+                            'No Clothing Item added yet. Add your first one!'),
+                      )
+                    : ListView.builder(
+                        itemCount: clothingItems.length,
+                        itemBuilder: (context, index) {
+                          final clothingItem = clothingItems[index];
+                          return GestureDetector(
+                            child: Card(
+                              child: ExpansionTile(
+                                title: Text(clothingItem.name),
+                                subtitle: Text(
+                                    'Phone Number: ${clothingItem.phoneNumber}'),
+                                children: [
+                                  ListTile(
+                                    title: Text(
+                                        'Material Owner ${clothingItem.materialOwner}'),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                        'Measurements: ${clothingItem.measurements}'),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                        'Charged: ${clothingItem.charges}'),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                        'Deposit Paid ${clothingItem.paymentEntries}'),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                        'Balance: ${clothingItem.paymentEntries}'),
+                                  ),
+                                  ListTile(
+                                    title: Text(
+                                        'Pick Up date: ${clothingItem.pickUpDate?.toIso8601String()}'),
+                                  )
+                                ],
+                              ),
+                            ),
+                          );
+                        }))
+          ]))
         ],
       ),
-      body: Column(children: [
-        Expanded(
-            child: clothingItems.isEmpty
-                ? const Center(
-                    child:
-                        Text('No Clothing Item added yet. Add your first one!'),
-                  )
-                : ListView.builder(
-                    itemCount: clothingItems.length,
-                    itemBuilder: (context, index) {
-                      final clothingItem = clothingItems[index];
-                      return GestureDetector(
-                        child: Card(
-                          child: ExpansionTile(
-                            title: Text(clothingItem.name),
-                            subtitle: Text(
-                                'Phone Number: ${clothingItem.phoneNumber}'),
-                            children: [
-                              ListTile(
-                                title: Text(
-                                    'Material Owner ${clothingItem.materialOwner}'),
-                              ),
-                              ListTile(
-                                title: Text(
-                                    'Measurements: ${clothingItem.measurements}'),
-                              ),
-                              ListTile(
-                                title: Text('Charged: ${clothingItem.charges}'),
-                              ),
-                              ListTile(
-                                title: Text(
-                                    'Deposit Paid ${clothingItem.paymentEntries}'),
-                              ),
-                              ListTile(
-                                title: Text(
-                                    'Balance: ${clothingItem.paymentEntries}'),
-                              ),
-                              ListTile(
-                                title: Text(
-                                    'Pick Up date: ${clothingItem.pickUpDate?.toIso8601String()}'),
-                              )
-                            ],
-                          ),
-                        ),
-                      );
-                    }))
-      ]),
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
