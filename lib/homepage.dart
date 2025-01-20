@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
+import 'package:gipaw_tailor/contacts/contactspage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
@@ -817,7 +818,14 @@ class _MyHomePageState extends State<MyHomePage> {
                               builder: (context) => ReminderPage()));
                     },
                   ),
-                  TextButton(onPressed: () {}, child: Text("Contacts"))
+                  TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ContactsPage()));
+                      },
+                      child: Text("Contacts"))
                 ]))
               ],
             ),
