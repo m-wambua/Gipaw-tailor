@@ -1,9 +1,5 @@
-import 'dart:convert';
-import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
@@ -13,7 +9,6 @@ import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
 import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
-import 'package:path_provider/path_provider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -32,7 +27,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final int _counter = 0;
   final _namecontroller = TextEditingController();
   final _phoneNumbercontroller = TextEditingController();
   final _measurementsController = TextEditingController();
@@ -58,20 +53,20 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading clothing items')));
+          const SnackBar(content: Text('Error loading clothing items')));
     }
   }
 
   @override
   void _newPiece(String newClothing) async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     List<Map<String, TextEditingController>> paymentPairs = [
       {'deposit': TextEditingController(), 'balance': TextEditingController()}
     ];
     List<Map<String, TextEditingController>> measurementPairs = [
       {'part': TextEditingController(), 'measurement': TextEditingController()}
     ];
-    bool _materialOwner = false;
+    bool materialOwner = false;
 
     await showDialog(
         context: context,
@@ -80,9 +75,9 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (BuildContext context, StateSetter setState) {
               return AlertDialog(
                 scrollable: true,
-                title: Text('Create New Clothing Item'),
+                title: const Text('Create New Clothing Item'),
                 content: Form(
-                    key: _formKey,
+                    key: formKey,
                     child: Column(
                       children: [
                         Row(
@@ -117,10 +112,10 @@ class _MyHomePageState extends State<MyHomePage> {
                           height: 10,
                         ),
                         TextFormField(
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                               labelText: "email", border: OutlineInputBorder()),
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 5,
                         ),
                         Row(
@@ -128,23 +123,23 @@ class _MyHomePageState extends State<MyHomePage> {
                           children: [
                             Radio(
                               value: true,
-                              groupValue: _materialOwner,
+                              groupValue: materialOwner,
                               onChanged: (value) {
                                 setState(() {
-                                  _materialOwner = value!;
+                                  materialOwner = value!;
                                 });
                               },
                             ),
-                            Text("Customer Material"),
+                            const Text("Customer Material"),
                             Radio(
                                 value: false,
-                                groupValue: _materialOwner,
+                                groupValue: materialOwner,
                                 onChanged: (value) {
                                   setState(() {
-                                    _materialOwner = value!;
+                                    materialOwner = value!;
                                   });
                                 }),
-                            Text("Own Material"),
+                            const Text("Own Material"),
                           ],
                         ),
                         const SizedBox(
@@ -161,18 +156,18 @@ class _MyHomePageState extends State<MyHomePage> {
                                   Expanded(
                                       child: TextField(
                                     controller: pair['part'],
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                         labelText: 'Part',
                                         border: OutlineInputBorder()),
                                     keyboardType: TextInputType.name,
                                   )),
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 10,
                                   ),
                                   Expanded(
                                       child: TextField(
                                     controller: pair['measurement'],
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                         labelText: "Measurement",
                                         border: OutlineInputBorder()),
                                     keyboardType: TextInputType.number,
@@ -191,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     }
                                   });
                                 },
-                                icon: Icon(Icons.remove)),
+                                icon: const Icon(Icons.remove)),
                             IconButton(
                                 onPressed: () {
                                   setState(() {
@@ -201,10 +196,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                     });
                                   });
                                 },
-                                icon: Icon(Icons.add))
+                                icon: const Icon(Icons.add))
                           ],
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 5,
                         ),
                         TextFormField(
@@ -224,17 +219,17 @@ class _MyHomePageState extends State<MyHomePage> {
                             onPressed: () {
                               _addSample();
                             },
-                            child: Text('Add Sample')),
+                            child: const Text('Add Sample')),
                         const SizedBox(
                           height: 10,
                         ),
                         TextFormField(
                           controller: _chargesController,
-                          decoration: InputDecoration(labelText: 'Charges'),
+                          decoration: const InputDecoration(labelText: 'Charges'),
                           validator: (value) =>
                               value!.isEmpty ? 'Please enter a charge' : null,
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 10,
                         ),
                         const SizedBox(
@@ -258,18 +253,18 @@ class _MyHomePageState extends State<MyHomePage> {
                                           controller: pair['deposit'],
                                           decoration: InputDecoration(
                                             labelText: 'Deposit ${index + 1}',
-                                            border: OutlineInputBorder(),
+                                            border: const OutlineInputBorder(),
                                           ),
                                           keyboardType: TextInputType.number,
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: TextField(
                                           controller: pair['balance'],
                                           decoration: InputDecoration(
                                             labelText: 'Balance ${index + 1}',
-                                            border: OutlineInputBorder(),
+                                            border: const OutlineInputBorder(),
                                           ),
                                           keyboardType: TextInputType.number,
                                         ),
@@ -293,7 +288,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         }
                                       });
                                     },
-                                    icon: Icon(Icons.remove)),
+                                    icon: const Icon(Icons.remove)),
                                 IconButton(
                                     onPressed: () {
                                       setState(() {
@@ -304,7 +299,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         });
                                       });
                                     },
-                                    icon: Icon(Icons.add))
+                                    icon: const Icon(Icons.add))
                               ],
                             )
                           ],
@@ -313,7 +308,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             onPressed: () {
                               _promptPayment();
                             },
-                            child: Text('Prompt Payment')),
+                            child: const Text('Prompt Payment')),
                         const SizedBox(
                           height: 10,
                         ),
@@ -321,7 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             onPressed: () {
                               _schedulePickUp();
                             },
-                            child: Text('Pick up date'))
+                            child: const Text('Pick up date'))
                       ],
                     )),
                 actions: [
@@ -330,13 +325,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                       ElevatedButton(
                           onPressed: () {},
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(color: Colors.red),
                           )),
                       ElevatedButton(
                           onPressed: () {
-                            if (_formKey.currentState!.validate()) {
+                            if (formKey.currentState!.validate()) {
                               List<PaymentEntry> payments = paymentPairs
                                   .map((pair) => PaymentEntry(
                                       deposit: pair['deposit']!.text,
@@ -345,7 +340,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ClothingItem newItem = ClothingItem(
                                 name: _namecontroller.text,
                                 phoneNumber: _phoneNumbercontroller.text,
-                                materialOwner: _materialOwner,
+                                materialOwner: materialOwner,
                                 measurements: _measurementsController.text,
                                 charges: _chargesController.text,
                                 paymentEntries: payments,
@@ -364,7 +359,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               _loadClothingItems();
                             });
                           },
-                          child: Text(
+                          child: const Text(
                             'Save',
                             style: TextStyle(color: Colors.green),
                           ))
@@ -392,7 +387,7 @@ class _MyHomePageState extends State<MyHomePage> {
               builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               scrollable: true,
-              title: Text('Create New Clothing Item'),
+              title: const Text('Create New Clothing Item'),
               content: Form(
                   child: Column(
                 children: [
@@ -421,10 +416,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     height: 10,
                   ),
                   TextFormField(
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                         labelText: "email", border: OutlineInputBorder()),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 5,
                   ),
                   Column(
@@ -438,18 +433,18 @@ class _MyHomePageState extends State<MyHomePage> {
                               Expanded(
                                   child: TextField(
                                 controller: pair['part'],
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                     labelText: 'Part',
                                     border: OutlineInputBorder()),
                                 keyboardType: TextInputType.name,
                               )),
-                              SizedBox(
+                              const SizedBox(
                                 width: 10,
                               ),
                               Expanded(
                                   child: TextField(
                                 controller: pair['measurement'],
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                     labelText: 'Measurement',
                                     border: OutlineInputBorder()),
                                 keyboardType: TextInputType.number,
@@ -469,7 +464,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               }
                             });
                           },
-                          icon: Icon(Icons.remove)),
+                          icon: const Icon(Icons.remove)),
                       IconButton(
                           onPressed: () {
                             setState(() {
@@ -479,7 +474,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               });
                             });
                           },
-                          icon: Icon(Icons.add))
+                          icon: const Icon(Icons.add))
                     ],
                   ),
                   TextFormField(
@@ -496,16 +491,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         _addSample();
                       },
-                      child: Text('Add Sample')),
+                      child: const Text('Add Sample')),
                   const SizedBox(
                     height: 10,
                   ),
                   TextFormField(
-                    decoration: InputDecoration(labelText: 'Charges'),
+                    decoration: const InputDecoration(labelText: 'Charges'),
                     validator: (value) =>
                         value!.isEmpty ? 'Please enter a charge' : null,
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 10,
                   ),
                   Column(
@@ -524,18 +519,18 @@ class _MyHomePageState extends State<MyHomePage> {
                                     controller: pair['deposit'],
                                     decoration: InputDecoration(
                                       labelText: 'Deposit ${index + 1}',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
                                     ),
                                     keyboardType: TextInputType.number,
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
                                     controller: pair['balance'],
                                     decoration: InputDecoration(
                                       labelText: 'Balance ${index + 1}',
-                                      border: OutlineInputBorder(),
+                                      border: const OutlineInputBorder(),
                                     ),
                                     keyboardType: TextInputType.number,
                                   ),
@@ -559,7 +554,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   }
                                 });
                               },
-                              icon: Icon(Icons.remove)),
+                              icon: const Icon(Icons.remove)),
                           IconButton(
                               onPressed: () {
                                 setState(() {
@@ -570,7 +565,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   });
                                 });
                               },
-                              icon: Icon(Icons.add))
+                              icon: const Icon(Icons.add))
                         ],
                       )
                     ],
@@ -579,7 +574,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         _promptPayment();
                       },
-                      child: Text('Prompt Payment')),
+                      child: const Text('Prompt Payment')),
                   const SizedBox(
                     height: 10,
                   ),
@@ -587,7 +582,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         _schedulePickUp();
                       },
-                      child: Text('Pick up date'))
+                      child: const Text('Pick up date'))
                 ],
               )),
               actions: [
@@ -596,13 +591,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     ElevatedButton(
                         onPressed: () {},
-                        child: Text(
+                        child: const Text(
                           'Cancel',
                           style: TextStyle(color: Colors.red),
                         )),
                     ElevatedButton(
                         onPressed: () {},
-                        child: Text(
+                        child: const Text(
                           'Save',
                           style: TextStyle(color: Colors.green),
                         ))
@@ -616,7 +611,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _addSample() async {
     showDialog(
-        context: context as BuildContext,
+        context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Add sample'),
@@ -624,8 +619,8 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Take a photo'),
-                IconButton(onPressed: () {}, icon: Icon(Icons.photo))
+                const Text('Take a photo'),
+                IconButton(onPressed: () {}, icon: const Icon(Icons.photo))
               ],
             ),
             actions: [
@@ -636,7 +631,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Text(
+                      child: const Text(
                         'Cancel',
                         style: TextStyle(color: Colors.red),
                       )),
@@ -644,7 +639,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Text(
+                      child: const Text(
                         'Save',
                         style: TextStyle(color: Colors.green),
                       ))
@@ -660,7 +655,7 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('New Piece or Repair'),
+            title: const Text('New Piece or Repair'),
             content: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -668,12 +663,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       _newPiece("New Clothing");
                     },
-                    child: Text('New Piece')),
+                    child: const Text('New Piece')),
                 ElevatedButton(
                     onPressed: () {
                       _repair("Repair");
                     },
-                    child: Text('Repair'))
+                    child: const Text('Repair'))
               ],
             ),
           );
@@ -735,7 +730,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       )),
                   TextButton(
                       onPressed: () {},
-                      child: Text(
+                      child: const Text(
                         'Save',
                         style: TextStyle(color: Colors.green),
                       ))
@@ -762,8 +757,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text("Welcome to Gipaw Tailor"),
-        actions: [],
+        title: const Text("Welcome to Gipaw Tailor"),
+        actions: const [],
       ),
       body: Row(
         children: [
@@ -778,17 +773,17 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       _uniformSales();
                     },
-                    child: Text("Sell Uniform"),
+                    child: const Text("Sell Uniform"),
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: Text("Sell Curtains"),
+                    child: const Text("Sell Curtains"),
                   ),
                   TextButton(
                       onPressed: () {
                         _newOrRepare();
                       },
-                      child: Text("Sell New Clothes")),
+                      child: const Text("Sell New Clothes")),
                   TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -797,35 +792,38 @@ class _MyHomePageState extends State<MyHomePage> {
                                 builder: (context) => StockViewWrapper(
                                     stockFilePath: stockPath)));
                       },
-                      child: Text('View Stock')),
+                      child: const Text('View Stock')),
                   TextButton(
-                    child: Text("Sales"),
+                    child: const Text("Sales"),
                     onPressed: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => SalesViewWrapper(
+                              builder: (context) => const SalesViewWrapper(
                                   salesFilePath:
                                       'lib/uniforms/sales/sales.json')));
                     },
                   ),
                   TextButton(
-                    child: Text("Reminders"),
+                    child: const Text("Reminders"),
                     onPressed: () {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => ReminderPage()));
+                              builder: (context) => const ReminderPage()));
                     },
                   ),
                   TextButton(
                       onPressed: () {
+                        
+                      
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => ContactsPage()));
+                                builder: (context) => const ContactsPage()));
+                                
                       },
-                      child: Text("Contacts"))
+                      child: const Text("Contacts"))
                 ]))
               ],
             ),
@@ -961,7 +959,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 bool success = await stockManager.processSale(entries);
                 if (success) {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Row(
                       children: [
                         CircularProgressIndicator.adaptive(),
@@ -974,24 +972,24 @@ class _MyHomePageState extends State<MyHomePage> {
                     duration: Duration(seconds: 1),
                   ));
 
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Sale processed successfully'),
                     backgroundColor: Colors.green,
                   ));
                 }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('Error processing sale'),
                   backgroundColor: Colors.red,
                 ));
               }
             }
 
-            Widget _buildStockStatus(Map<String, dynamic> entry) {
+            Widget buildStockStatus(Map<String, dynamic> entry) {
               if (entry['selectedUniformItem'] == null ||
                   entry['selectedColor'] == null ||
                   entry['selectedSize'] == null) {
-                return SizedBox.shrink();
+                return const SizedBox.shrink();
               }
 
               final stockStatus = stockManager.checkStockStatus(
@@ -1007,14 +1005,14 @@ class _MyHomePageState extends State<MyHomePage> {
               switch (stockStatus) {
                 case StockStatus.outOfStock:
                   return Container(
-                    margin: EdgeInsets.only(top: 8),
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.red.shade50,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: Colors.red.shade200),
                     ),
-                    child: Text(
+                    child: const Text(
                       'Out of Stock',
                       style: TextStyle(color: Colors.red),
                     ),
@@ -1022,21 +1020,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 case StockStatus.low:
                   return Container(
-                    margin: EdgeInsets.only(top: 8),
+                    margin: const EdgeInsets.only(top: 8),
                     child: Row(
                       children: [
                         Text(
                           'Stock: $currentStock',
-                          style: TextStyle(color: Colors.orange),
+                          style: const TextStyle(color: Colors.orange),
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         TextButton.icon(
-                          icon: Icon(Icons.warning_amber_rounded, size: 18),
-                          label: Text('Request Item'),
+                          icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                          label: const Text('Request Item'),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.orange.shade50,
                             foregroundColor: Colors.orange.shade900,
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                           ),
                           onPressed: () async {
@@ -1050,7 +1048,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               dueDate: null,
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
+                              const SnackBar(
                                 content: Text('Stock request reminder created'),
                                 backgroundColor: Colors.orange,
                               ),
@@ -1063,18 +1061,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 case StockStatus.available:
                   return Container(
-                    margin: EdgeInsets.only(top: 8),
+                    margin: const EdgeInsets.only(top: 8),
                     child: Text(
                       'Stock: $currentStock',
-                      style: TextStyle(color: Colors.green),
+                      style: const TextStyle(color: Colors.green),
                     ),
                   );
               }
             }
 
             return AlertDialog(
-              title: Text("Uniform Sales"),
-              content: Container(
+              title: const Text("Uniform Sales"),
+              content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1093,7 +1091,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   children: [
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
-                                        decoration: InputDecoration(
+                                        decoration: const InputDecoration(
                                             labelText: "Uniform Item"),
                                         items: uniformItems.map((String item) {
                                           return DropdownMenuItem<String>(
@@ -1128,11 +1126,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                             ['selectedUniformItem'],
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
                                         decoration:
-                                            InputDecoration(labelText: "Color"),
+                                            const InputDecoration(labelText: "Color"),
                                         items: entries[index]['availableColors']
                                             .map<DropdownMenuItem<String>>(
                                                 (color) {
@@ -1150,11 +1148,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         value: entries[index]['selectedColor'],
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
                                         decoration:
-                                            InputDecoration(labelText: "Size"),
+                                            const InputDecoration(labelText: "Size"),
                                         items: entries[index]['availableSizes']
                                             .map<DropdownMenuItem<String>>(
                                                 (size) {
@@ -1172,12 +1170,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                         value: entries[index]['selectedSize'],
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: TextFormField(
                                         controller: entries[index]
                                             ['numberController'],
-                                        decoration: InputDecoration(
+                                        decoration: const InputDecoration(
                                             labelText: "Number"),
                                         keyboardType: TextInputType.number,
                                         onChanged: (value) {
@@ -1194,11 +1192,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         },
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
                                         decoration:
-                                            InputDecoration(labelText: "Prize"),
+                                            const InputDecoration(labelText: "Prize"),
                                         items: entries[index]['availablePrizes']
                                             .map<DropdownMenuItem<String>>(
                                                 (prize) {
@@ -1217,19 +1215,19 @@ class _MyHomePageState extends State<MyHomePage> {
                                         value: entries[index]['selectedPrize'],
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: TextFormField(
                                         readOnly: true,
                                         controller: entries[index]
                                             ['priceController'],
-                                        decoration: InputDecoration(
+                                        decoration: const InputDecoration(
                                           labelText: "Price",
                                         ),
                                       ),
                                     ),
                                     IconButton(
-                                      icon: Icon(Icons.remove_circle,
+                                      icon: const Icon(Icons.remove_circle,
                                           color: Colors.red),
                                       onPressed: () => removeEntry(index),
                                     ),
@@ -1237,23 +1235,23 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               ),
                               Padding(
-                                  padding: EdgeInsets.only(left: 8, bottom: 16),
-                                  child: _buildStockStatus(entries[index]))
+                                  padding: const EdgeInsets.only(left: 8, bottom: 16),
+                                  child: buildStockStatus(entries[index]))
                             ],
                           );
                         },
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     TextButton.icon(
-                      icon: Icon(Icons.add, color: Colors.green),
-                      label: Text("Add"),
+                      icon: const Icon(Icons.add, color: Colors.green),
+                      label: const Text("Add"),
                       onPressed: addNewEntry,
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Text(
                       "Total: ${calculateTotalPrice()}",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1264,7 +1262,7 @@ class _MyHomePageState extends State<MyHomePage> {
               actions: [
                 TextButton(
                   onPressed: () {},
-                  child: Text('Send Quote'),
+                  child: const Text('Send Quote'),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -1288,7 +1286,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       await salesManager.processSale(entries);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content:
                               Text('Please fill all fields with valid inputs'),
                           backgroundColor: Colors.orange,
@@ -1296,13 +1294,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                     }
                   },
-                  child: Text("Process Sale"),
+                  child: const Text("Process Sale"),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                 ),
               ],
             );
@@ -1370,7 +1368,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 bool success = await stockManager.processSale(entries);
                 if (success) {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Row(
                       children: [
                         CircularProgressIndicator.adaptive(),
@@ -1383,13 +1381,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     duration: Duration(seconds: 1),
                   ));
 
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('Sale processed successfully'),
                     backgroundColor: Colors.green,
                   ));
                 }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('Error processing sale'),
                   backgroundColor: Colors.red,
                 ));
@@ -1397,8 +1395,8 @@ class _MyHomePageState extends State<MyHomePage> {
             }
 
             return AlertDialog(
-              title: Text("Uniform Sales"),
-              content: Container(
+              title: const Text("Uniform Sales"),
+              content: SizedBox(
                   width: double.maxFinite,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1414,7 +1412,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     children: [
                                       Expanded(
                                         child: DropdownButtonFormField<String>(
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                               labelText: "Uniform Item"),
                                           items:
                                               uniformItems.map((String item) {
@@ -1452,10 +1450,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                               ['selectedUniformItem'],
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: DropdownButtonFormField<String>(
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                               labelText: "Color"),
                                           items: entries[index]
                                                   ['availableColors']
@@ -1476,10 +1474,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                               ['selectedColor'],
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: DropdownButtonFormField<String>(
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                               labelText: "Size"),
                                           items: entries[index]
                                                   ['availableSizes']
@@ -1499,12 +1497,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                           value: entries[index]['selectedSize'],
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: TextFormField(
                                           controller: entries[index]
                                               ['numberController'],
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                               labelText: "Number"),
                                           keyboardType: TextInputType.number,
                                           onChanged: (value) {
@@ -1522,10 +1520,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                           },
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: DropdownButtonFormField<String>(
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                               labelText: "Prize"),
                                           items: entries[index]
                                                   ['availablePrizes']
@@ -1547,19 +1545,19 @@ class _MyHomePageState extends State<MyHomePage> {
                                               ['selectedPrize'],
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: TextFormField(
                                           readOnly: true,
                                           controller: entries[index]
                                               ['priceController'],
-                                          decoration: InputDecoration(
+                                          decoration: const InputDecoration(
                                             labelText: "Price",
                                           ),
                                         ),
                                       ),
                                       IconButton(
-                                        icon: Icon(Icons.remove_circle,
+                                        icon: const Icon(Icons.remove_circle,
                                             color: Colors.red),
                                         onPressed: () => removeEntry(index),
                                       ),
@@ -1570,7 +1568,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   )),
               actions: [
-                TextButton(onPressed: () {}, child: Text("Send Quote")),
+                TextButton(onPressed: () {}, child: const Text("Send Quote")),
                 TextButton(
                     onPressed: () async {
                       bool isValid = true;
@@ -1588,17 +1586,17 @@ class _MyHomePageState extends State<MyHomePage> {
                       if (isValid) {
                         await processSaleAndUpdateStock();
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text(
                                 'Ensure all fields are filled with valid inputs')));
                       }
                     },
-                    child: Text('Process Sale')),
+                    child: const Text('Process Sale')),
                 TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text("Cancel"))
+                    child: const Text("Cancel"))
               ],
             );
           });
@@ -1611,16 +1609,16 @@ class _MyHomePageState extends State<MyHomePage> {
         builder: (BuildContext context) {
           return StatefulBuilder(builder: (context, setState) {
             return AlertDialog(
-              title: Text('Prompt Payment'),
+              title: const Text('Prompt Payment'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
                     decoration:
-                        InputDecoration(labelText: "Enter phone Number"),
+                        const InputDecoration(labelText: "Enter phone Number"),
                   ),
                   TextFormField(
-                    decoration: InputDecoration(labelText: "Enter amount"),
+                    decoration: const InputDecoration(labelText: "Enter amount"),
                   ),
                 ],
               ),
@@ -1632,8 +1630,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        child: Text('cancel')),
-                    ElevatedButton(onPressed: () {}, child: Text('Prompt'))
+                        child: const Text('cancel')),
+                    ElevatedButton(onPressed: () {}, child: const Text('Prompt'))
                   ],
                 )
               ],
@@ -1699,8 +1697,8 @@ class _MyHomePageState extends State<MyHomePage> {
             }
 
             return AlertDialog(
-              title: Text("Uniform Stock"),
-              content: Container(
+              title: const Text("Uniform Stock"),
+              content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1716,7 +1714,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               children: [
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                         labelText: "Uniform Item"),
                                     items: uniformItems.map((String item) {
                                       return DropdownMenuItem<String>(
@@ -1747,11 +1745,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ['selectedUniformItem'],
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     decoration:
-                                        InputDecoration(labelText: "Color"),
+                                        const InputDecoration(labelText: "Color"),
                                     items: entries[index]['availableColors']
                                         .map<DropdownMenuItem<String>>((color) {
                                       return DropdownMenuItem<String>(
@@ -1768,11 +1766,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                     value: entries[index]['selectedColor'],
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     decoration:
-                                        InputDecoration(labelText: "Size"),
+                                        const InputDecoration(labelText: "Size"),
                                     items: entries[index]['availableSizes']
                                         .map<DropdownMenuItem<String>>((size) {
                                       return DropdownMenuItem<String>(
@@ -1789,13 +1787,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                     value: entries[index]['selectedSize'],
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: TextFormField(
                                     controller: entries[index]
                                         ['numberController'],
                                     decoration:
-                                        InputDecoration(labelText: "Number"),
+                                        const InputDecoration(labelText: "Number"),
                                     keyboardType: TextInputType.number,
                                     onChanged: (value) {
                                       updateCalculatedPrice(index);
@@ -1811,10 +1809,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                     },
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration: InputDecoration(
+                                    decoration: const InputDecoration(
                                         labelText: "Unit Prize"),
                                     items: entries[index]['availablePrizes']
                                         .map<DropdownMenuItem<String>>((prize) {
@@ -1833,9 +1831,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                     value: entries[index]['selectedPrize'],
                                   ),
                                 ),
-                                SizedBox(width: 10),
+                                const SizedBox(width: 10),
                                 IconButton(
-                                  icon: Icon(Icons.remove_circle,
+                                  icon: const Icon(Icons.remove_circle,
                                       color: Colors.red),
                                   onPressed: () => removeEntry(index),
                                 ),
@@ -1845,13 +1843,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         },
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     TextButton.icon(
-                      icon: Icon(Icons.add, color: Colors.green),
-                      label: Text("Add"),
+                      icon: const Icon(Icons.add, color: Colors.green),
+                      label: const Text("Add"),
                       onPressed: addNewEntry,
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -1885,13 +1883,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       print('Ensure all fields are filled with valid inputs.');
                     }
                   },
-                  child: Text("Submit"),
+                  child: const Text("Submit"),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                 ),
               ],
             );

@@ -54,7 +54,7 @@ class ContactsManager {
 
   List<Contact> _contacts = [];
   late String _filePath;
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   List<Contact> get contacts => List.unmodifiable(_contacts);
 

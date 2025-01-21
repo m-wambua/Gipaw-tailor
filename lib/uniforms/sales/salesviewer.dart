@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
 import 'package:intl/intl.dart';
@@ -6,9 +5,9 @@ class SalesViewWrapper extends StatefulWidget {
   final String salesFilePath;
 
   const SalesViewWrapper({
-    Key? key,
+    super.key,
     required this.salesFilePath,
-  }) : super(key: key);
+  });
 
   @override
   State<SalesViewWrapper> createState() => _SalesViewWrapperState();
@@ -27,7 +26,7 @@ class _SalesViewWrapperState extends State<SalesViewWrapper> {
 
   Future<void> _initializeSales() async {
     _salesManager = SalesManager(widget.salesFilePath);
-    await Future.delayed(Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 100));
 
     setState(() {
       _salesItems = _salesManager.currentSales;
@@ -45,7 +44,7 @@ class _SalesViewWrapperState extends State<SalesViewWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
@@ -63,10 +62,10 @@ class SalesViewPage extends StatefulWidget {
   final Future<void> Function() onRefresh;
 
   const SalesViewPage({
-    Key? key,
+    super.key,
     required this.salesItems,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   State<SalesViewPage> createState() => _SalesViewPageState();
@@ -91,10 +90,10 @@ class _SalesViewPageState extends State<SalesViewPage> {
     );
     return Scaffold(
       appBar: AppBar( 
-        title: Text("Sales History"),
+        title: const Text("Sales History"),
         actions: [ 
           IconButton(onPressed: widget.onRefresh,
-           icon: Icon(Icons.refresh)),
+           icon: const Icon(Icons.refresh)),
         ],
       ),
       body: Padding(padding: const EdgeInsets.all(8.0),
@@ -128,7 +127,7 @@ _buildSummaryCard(
               ],
             ),),
           ),
-          SizedBox(height: 10,),
+          const SizedBox(height: 10,),
           Expanded( 
             child: Card( 
               child: SingleChildScrollView( 
@@ -136,7 +135,7 @@ _buildSummaryCard(
                 child: SingleChildScrollView( 
                   scrollDirection: Axis.horizontal,
                   child: DataTable( 
-                    columns: [ 
+                    columns: const [ 
                       DataColumn(label: Text("Sale Id")),
                       DataColumn(label: Text("Item")),
                       DataColumn(label: Text("Color")),
@@ -172,7 +171,7 @@ _buildSummaryCard(
 
   Widget _buildSummaryCard(String title,String value, IconData icon, Color color){
     return Container( 
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration( 
         border: Border.all(color: color.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(30.0),
@@ -181,7 +180,7 @@ _buildSummaryCard(
         mainAxisSize: MainAxisSize.min,
         children: [ 
           Icon( icon, color: color,),
-          SizedBox(height: 8,),
+          const SizedBox(height: 8,),
           Text( 
             title,
             style: TextStyle( 
@@ -189,9 +188,9 @@ _buildSummaryCard(
               fontSize: 12,
             ),
           ),
-          SizedBox(height: 4,),
+          const SizedBox(height: 4,),
           Text(value,
-          style: TextStyle(fontWeight: FontWeight.bold,
+          style: const TextStyle(fontWeight: FontWeight.bold,
           fontSize: 16,),)
         ],
       ),

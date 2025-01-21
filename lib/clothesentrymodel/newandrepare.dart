@@ -136,7 +136,7 @@ class ClothingItemIdentifier {
     String sanitizedPhone = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
 
     // Combine and convert to lowercase to ensure consistency
-    String identifier = '${sanitizedName.toLowerCase()}_${sanitizedPhone}';
+    String identifier = '${sanitizedName.toLowerCase()}_$sanitizedPhone';
 
     return identifier;
   }

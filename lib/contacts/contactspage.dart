@@ -1,11 +1,14 @@
 // contacts_page.dart
 import 'dart:io';
 
+
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/contacts/contactsmodel.dart';
-import 'package:image_picker/image_picker.dart';
+
 
 class ContactsPage extends StatefulWidget {
+  const ContactsPage({super.key});
+
   @override
   _ContactsPageState createState() => _ContactsPageState();
 }
@@ -19,7 +22,7 @@ class _ContactsPageState extends State<ContactsPage> {
   final _addressController = TextEditingController();
   final _businessNatureController = TextEditingController();
   File? _businessCard;
-  final ImagePicker _picker = ImagePicker();
+
 
   @override
   void initState() {
@@ -50,14 +53,7 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
-  Future<void> _pickBusinessCard() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _businessCard = File(image.path);
-      });
-    }
-  }
+ 
 
   void _clearForm() {
     _nameController.clear();
@@ -177,7 +173,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: _pickBusinessCard,
+                    onPressed:(){},
                     icon: const Icon(Icons.upload),
                     label: const Text('Upload Business Card'),
                   ),

@@ -57,7 +57,7 @@ class SaleItem {
 class SalesManager {
   final String filePath;
   List<SaleItem> currentSales = [];
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   SalesManager(this.filePath) {
     loadSales();
@@ -175,7 +175,7 @@ class SalesManager {
   Future<Map<String, dynamic>> getDailySalesSummary() async {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = startOfDay.add(Duration(days: 1));
+    final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final dailySales = currentSales.where((sale) {
       final saleDate = DateFormat('yyyy-MM-dd HH:mm').parse(sale.date);

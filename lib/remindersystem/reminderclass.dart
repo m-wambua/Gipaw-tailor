@@ -117,7 +117,7 @@ class ReminderManager {
   final String embroideryFilePath;
   List<ReminderItem> reminders = [];
   List<EmbroideryItem> embroideries = [];
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   ReminderManager({
     required this.reminderFilePath,
