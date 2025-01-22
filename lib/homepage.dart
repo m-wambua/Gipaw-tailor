@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
+import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
@@ -225,7 +225,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         TextFormField(
                           controller: _chargesController,
-                          decoration: const InputDecoration(labelText: 'Charges'),
+                          decoration:
+                              const InputDecoration(labelText: 'Charges'),
                           validator: (value) =>
                               value!.isEmpty ? 'Please enter a charge' : null,
                         ),
@@ -815,13 +816,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   TextButton(
                       onPressed: () {
-                        
-                      
                         Navigator.push(
                             context,
                             MaterialPageRoute(
                                 builder: (context) => const ContactsPage()));
-                                
                       },
                       child: const Text("Contacts"))
                 ]))
@@ -1006,7 +1004,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 case StockStatus.outOfStock:
                   return Container(
                     margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.red.shade50,
                       borderRadius: BorderRadius.circular(4),
@@ -1029,7 +1028,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         const SizedBox(width: 12),
                         TextButton.icon(
-                          icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                          icon:
+                              const Icon(Icons.warning_amber_rounded, size: 18),
                           label: const Text('Request Item'),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.orange.shade50,
@@ -1129,8 +1129,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
-                                        decoration:
-                                            const InputDecoration(labelText: "Color"),
+                                        decoration: const InputDecoration(
+                                            labelText: "Color"),
                                         items: entries[index]['availableColors']
                                             .map<DropdownMenuItem<String>>(
                                                 (color) {
@@ -1151,8 +1151,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
-                                        decoration:
-                                            const InputDecoration(labelText: "Size"),
+                                        decoration: const InputDecoration(
+                                            labelText: "Size"),
                                         items: entries[index]['availableSizes']
                                             .map<DropdownMenuItem<String>>(
                                                 (size) {
@@ -1195,8 +1195,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: DropdownButtonFormField<String>(
-                                        decoration:
-                                            const InputDecoration(labelText: "Prize"),
+                                        decoration: const InputDecoration(
+                                            labelText: "Prize"),
                                         items: entries[index]['availablePrizes']
                                             .map<DropdownMenuItem<String>>(
                                                 (prize) {
@@ -1235,7 +1235,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                               ),
                               Padding(
-                                  padding: const EdgeInsets.only(left: 8, bottom: 16),
+                                  padding: const EdgeInsets.only(
+                                      left: 8, bottom: 16),
                                   child: buildStockStatus(entries[index]))
                             ],
                           );
@@ -1613,13 +1614,14 @@ class _MyHomePageState extends State<MyHomePage> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextFormField(
-                    decoration:
-                        const InputDecoration(labelText: "Enter phone Number"),
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(labelText: "Enter amount"),
-                  ),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => MpesaPaymentScreen()));
+                      },
+                      child: Text("Lipa na Mpesa"))
                 ],
               ),
               actions: [
@@ -1631,7 +1633,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.pop(context);
                         },
                         child: const Text('cancel')),
-                    ElevatedButton(onPressed: () {}, child: const Text('Prompt'))
+                    ElevatedButton(
+                        onPressed: () {}, child: const Text('Prompt'))
                   ],
                 )
               ],
@@ -1748,8 +1751,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        const InputDecoration(labelText: "Color"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Color"),
                                     items: entries[index]['availableColors']
                                         .map<DropdownMenuItem<String>>((color) {
                                       return DropdownMenuItem<String>(
@@ -1769,8 +1772,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        const InputDecoration(labelText: "Size"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Size"),
                                     items: entries[index]['availableSizes']
                                         .map<DropdownMenuItem<String>>((size) {
                                       return DropdownMenuItem<String>(
@@ -1792,8 +1795,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                   child: TextFormField(
                                     controller: entries[index]
                                         ['numberController'],
-                                    decoration:
-                                        const InputDecoration(labelText: "Number"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Number"),
                                     keyboardType: TextInputType.number,
                                     onChanged: (value) {
                                       updateCalculatedPrice(index);
