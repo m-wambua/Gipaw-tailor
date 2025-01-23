@@ -3,3 +3,11 @@
 2. The tailor can request additional requirements per piece taken 
 
 3. update prices to indicate unit price and totla price
+
+4. Order of Business:
+    a. Make a signpage that has hiarachy on who has access to what
+    b. update the payment plan to include cash and mpesa side by side or both
+    c. update the payment plan to include the option to pay in installments
+    d. also manage how the charges and deposits and balances are handled
+    e. add a feature to allow the tailor to add a note to the customer's order
+    

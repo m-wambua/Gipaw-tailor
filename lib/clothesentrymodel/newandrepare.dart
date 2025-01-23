@@ -141,3 +141,28 @@ class ClothingItemIdentifier {
     return identifier;
   }
 }
+
+extension ClothingItemSearch on ClotthingManager {
+  static Future<List<ClothingItem>> searchClothingItems(String query) async {
+    try {
+      List<ClothingItem> allItems = await ClotthingManager.loadClothingItems();
+
+      String lowercaseQuery = query.toLowerCase().trim();
+
+      List<ClothingItem> searchResults = allItems.where((item) {
+        bool nameContainsQuery =
+            item.name.toLowerCase().contains(lowercaseQuery);
+        bool phoneNumber =
+            item.phoneNumber.toLowerCase().contains(lowercaseQuery);
+
+        return nameContainsQuery || phoneNumber;
+      }).toList();
+      return searchResults;
+    } catch (e) {
+      print("Error searching clothing items:$e");
+      return [];
+    }
+  }
+}
+
+

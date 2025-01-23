@@ -759,7 +759,12 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: const Text("Welcome to Gipaw Tailor"),
-        actions: const [],
+        actions: const [
+/*
+          IconButton(onPressed: , icon: Icon(Icons.search)),
+          IconButton(onPressed: , icon: Icon(Icons.person))
+          */
+        ],
       ),
       body: Row(
         children: [
