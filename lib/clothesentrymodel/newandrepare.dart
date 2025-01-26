@@ -8,6 +8,8 @@ class ClothingItem {
   String phoneNumber;
   bool materialOwner;
   String measurements;
+  String part;
+  String measurement;
   String charges;
   List<PaymentEntry> paymentEntries;
   DateTime? pickUpDate;
@@ -17,6 +19,8 @@ class ClothingItem {
     required this.phoneNumber,
     required this.materialOwner,
     required this.measurements,
+    required this.part,
+    required this.measurement,
     required this.charges,
     this.paymentEntries = const [],
     this.pickUpDate,
@@ -27,6 +31,8 @@ class ClothingItem {
         'phoneNumber': phoneNumber,
         'materialOwner': materialOwner,
         'measurements': measurements,
+        'part': part,
+        'measurement': measurement,
         'charges': charges,
         'paymentEntries': paymentEntries.map((e) => e.toJson()).toList(),
         'pickUpDate': pickUpDate?.toIso8601String()
@@ -37,6 +43,8 @@ class ClothingItem {
         phoneNumber: json['phoneNumber'],
         materialOwner: json['materialOwner'],
         measurements: json['measurements'],
+        part: json['part'],
+        measurement: json['measurement'],
         charges: json['charges'],
         paymentEntries: (json['paymentEntries'] as List)
             .map((entry) => PaymentEntry.fromJson(entry))
@@ -50,17 +58,34 @@ class ClothingItem {
 class PaymentEntry {
   String deposit;
   String balance;
+  DateTime paymentDate;
+  String paymentType;
 
   PaymentEntry({
     required this.deposit,
     required this.balance,
+    required this.paymentDate,
+    required this.paymentType,
   });
 
-  Map<String, dynamic> toJson() => {'deposit': deposit, 'balance': balance};
+  Map<String, dynamic> toJson() => {
+        'deposit': deposit,
+        'balance': balance,
+        'paymentDate': paymentDate.toIso8601String(),
+        'paymentType': paymentType
+      };
   factory PaymentEntry.fromJson(Map<String, dynamic> json) => PaymentEntry(
-        deposit: json['deposit'],
-        balance: json['balance'],
-      );
+      deposit: json['deposit'],
+      balance: json['balance'],
+      paymentDate: DateTime.parse(json['paymentDate']),
+      paymentType: json['paymentType']);
+
+  static String calculateBalance(String charges, String deposit) {
+    double chargesAmount = double.parse(charges);
+    double depositAmount = double.parse(deposit);
+    double remainingBalance = chargesAmount - depositAmount;
+    return remainingBalance.toStringAsFixed(2);
+  }
 }
 
 class ClotthingManager {
@@ -164,5 +189,3 @@ extension ClothingItemSearch on ClotthingManager {
     }
   }
 }
-
-

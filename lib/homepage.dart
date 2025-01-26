@@ -9,6 +9,7 @@ import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
 import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
+import 'package:intl/intl.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -60,13 +61,19 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void _newPiece(String newClothing) async {
     final formKey = GlobalKey<FormState>();
-    List<Map<String, TextEditingController>> paymentPairs = [
-      {'deposit': TextEditingController(), 'balance': TextEditingController()}
+    List<Map<String, dynamic>> paymentPairs = [
+      {
+        'deposit': TextEditingController(),
+        'balance': TextEditingController(),
+        'paymentType': 'Cash',
+        'paymentDate': DateTime.now()
+      }
     ];
     List<Map<String, TextEditingController>> measurementPairs = [
       {'part': TextEditingController(), 'measurement': TextEditingController()}
     ];
     bool materialOwner = false;
+    final paymentTypes = ['Cash', 'Card', 'Bank Transfer', 'Mpesa'];
 
     await showDialog(
         context: context,
@@ -239,39 +246,118 @@ class _MyHomePageState extends State<MyHomePage> {
                         Column(
                           children: [
                             // Dynamic text fields going downwards
+
                             Column(
                               children:
                                   paymentPairs.asMap().entries.map((entry) {
                                 int index = entry.key;
                                 var pair = entry.value;
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: pair['deposit'],
-                                          decoration: InputDecoration(
-                                            labelText: 'Deposit ${index + 1}',
-                                            border: const OutlineInputBorder(),
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: pair['deposit'],
+                                            decoration: InputDecoration(
+                                              labelText: 'Deposit ${index + 1}',
+                                              border:
+                                                  const OutlineInputBorder(),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            onChanged: (value) {
+                                              // Automatically calculate balance when deposit changes
+                                              if (_chargesController
+                                                  .text.isNotEmpty) {
+                                                pair['balance'].text =
+                                                    PaymentEntry
+                                                        .calculateBalance(
+                                                            _chargesController
+                                                                .text,
+                                                            value);
+                                              }
+                                            },
                                           ),
-                                          keyboardType: TextInputType.number,
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: pair['balance'],
-                                          decoration: InputDecoration(
-                                            labelText: 'Balance ${index + 1}',
-                                            border: const OutlineInputBorder(),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: pair['balance'],
+                                            decoration: InputDecoration(
+                                              labelText: 'Balance ${index + 1}',
+                                              border:
+                                                  const OutlineInputBorder(),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            readOnly: true, // Auto-calculated
                                           ),
-                                          keyboardType: TextInputType.number,
                                         ),
-                                      ),
-                                    ],
-                                  ),
+                                      ],
+                                    ),
+                                    SizedBox(
+                                      height: 15,
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child:
+                                              DropdownButtonFormField<String>(
+                                            value: pair['paymentType'],
+                                            decoration: const InputDecoration(
+                                              labelText: 'Payment Type',
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            items: paymentTypes.map((type) {
+                                              return DropdownMenuItem(
+                                                value: type,
+                                                child: Text(type),
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                pair['paymentType'] = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: TextFormField(
+                                            decoration: InputDecoration(
+                                              labelText: 'Payment Date',
+                                              border:
+                                                  const OutlineInputBorder(),
+                                              suffixIcon: IconButton(
+                                                icon: const Icon(
+                                                    Icons.calendar_today),
+                                                onPressed: () async {
+                                                  DateTime? pickedDate =
+                                                      await showDatePicker(
+                                                    context: context,
+                                                    initialDate:
+                                                        pair['paymentDate'],
+                                                    firstDate: DateTime(2000),
+                                                    lastDate: DateTime(2101),
+                                                  );
+                                                  if (pickedDate != null) {
+                                                    setState(() {
+                                                      pair['paymentDate'] =
+                                                          pickedDate;
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            controller: TextEditingController(
+                                              text: DateFormat('yyyy-MM-dd')
+                                                  .format(pair['paymentDate']),
+                                            ),
+                                            readOnly: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 );
                               }).toList(),
                             ),
@@ -296,7 +382,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                         // Add a new pair of deposit and balance controllers
                                         paymentPairs.add({
                                           'deposit': TextEditingController(),
-                                          'balance': TextEditingController()
+                                          'balance': TextEditingController(),
+                                          'paymentType': 'Cash',
+                                          'paymentDate': DateTime.now()
                                         });
                                       });
                                     },
@@ -305,11 +393,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             )
                           ],
                         ),
-                        ElevatedButton(
-                            onPressed: () {
-                              _promptPayment();
-                            },
-                            child: const Text('Prompt Payment')),
                         const SizedBox(
                           height: 10,
                         ),
@@ -334,15 +417,25 @@ class _MyHomePageState extends State<MyHomePage> {
                           onPressed: () {
                             if (formKey.currentState!.validate()) {
                               List<PaymentEntry> payments = paymentPairs
-                                  .map((pair) => PaymentEntry(
-                                      deposit: pair['deposit']!.text,
-                                      balance: pair['balance']!.text))
+                                  .map(
+                                    (pair) => PaymentEntry(
+                                        deposit: pair['deposit']!.text,
+                                        balance: pair['balance']!.text,
+                                        paymentDate: pair['paymentDate'],
+                                        paymentType: pair['paymentType']),
+                                  )
                                   .toList();
                               ClothingItem newItem = ClothingItem(
                                 name: _namecontroller.text,
                                 phoneNumber: _phoneNumbercontroller.text,
                                 materialOwner: materialOwner,
                                 measurements: _measurementsController.text,
+                                part: measurementPairs
+                                    .map((pair) => pair['part']!.text)
+                                    .join(','),
+                                measurement: measurementPairs
+                                    .map((pair) => pair['measurement']!.text)
+                                    .join(','),
                                 charges: _chargesController.text,
                                 paymentEntries: payments,
                               );
@@ -849,40 +942,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         itemBuilder: (context, index) {
                           final clothingItem = clothingItems[index];
                           return GestureDetector(
-                            child: Card(
-                              child: ExpansionTile(
-                                title: Text(clothingItem.name),
-                                subtitle: Text(
-                                    'Phone Number: ${clothingItem.phoneNumber}'),
-                                children: [
-                                  ListTile(
-                                    title: Text(
-                                        'Material Owner ${clothingItem.materialOwner}'),
-                                  ),
-                                  ListTile(
-                                    title: Text(
-                                        'Measurements: ${clothingItem.measurements}'),
-                                  ),
-                                  ListTile(
-                                    title: Text(
-                                        'Charged: ${clothingItem.charges}'),
-                                  ),
-                                  ListTile(
-                                    title: Text(
-                                        'Deposit Paid ${clothingItem.paymentEntries}'),
-                                  ),
-                                  ListTile(
-                                    title: Text(
-                                        'Balance: ${clothingItem.paymentEntries}'),
-                                  ),
-                                  ListTile(
-                                    title: Text(
-                                        'Pick Up date: ${clothingItem.pickUpDate?.toIso8601String()}'),
-                                  )
-                                ],
-                              ),
-                            ),
-                          );
+                              child: buildClothingItemCard(clothingItem));
                         }))
           ]))
         ],
@@ -896,6 +956,194 @@ class _MyHomePageState extends State<MyHomePage> {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  Widget buildClothingItemCard(ClothingItem clothingItem) {
+    double totalDeposited = clothingItem.paymentEntries
+        .map((entry) => double.parse(entry.deposit))
+        .fold(0, (a, b) => a + b);
+
+    double originalCharges = double.parse(clothingItem.charges);
+    double remainingBalance = originalCharges - totalDeposited;
+    return Card(
+      child: ExpansionTile(
+        title: Text(clothingItem.name),
+        subtitle: Text('Phone Number: ${clothingItem.phoneNumber}'),
+        children: [
+          ListTile(
+            title: Text(
+                'Material Owner: ${clothingItem.materialOwner ? 'Customer Material' : 'Tailor Material'}'),
+          ),
+          ListTile(
+            title: Text('Measurements: ${clothingItem.measurements}'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Measurements:',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87),
+                ),
+                SizedBox(height: 8),
+                ...clothingItem.part.split(',').asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String part = entry.value.trim();
+                  String measurement =
+                      clothingItem.measurement.split(',')[index].trim();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '$part: ',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87),
+                        ),
+                        Text(
+                          measurement,
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList()
+              ],
+            ),
+          ),
+          ListTile(
+            title: Text('Charges: ${clothingItem.charges}'),
+          ),
+          ListTile(
+            title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
+          ),
+          ListTile(
+            title: Text(
+                'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}'),
+          ),
+          ExpansionTile(
+            title: Text(
+                "Payment History(${clothingItem.paymentEntries.length} entries)"),
+            children: clothingItem.paymentEntries
+                .map((entry) => ListTile(
+                      title: Text("Deposit: ${entry.deposit}"),
+                      subtitle: Text(
+                          "Type: ${entry.paymentType}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                    ))
+                .toList(),
+          ),
+          ListTile(
+            title: Text(
+                'Pick Up Date: ${clothingItem.pickUpDate?.toIso8601String() ?? 'Not Scheduled'}'),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                  onPressed: () {
+                    _sendPickUpNotification(clothingItem);
+                  },
+                  child: Text('Ready for pickup')),
+              ElevatedButton(
+                  onPressed: () {
+                    _showUpdatePaymentDialog(clothingItem);
+                  },
+                  child: Text('Update Payment'))
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  void _sendPickUpNotification(ClothingItem clothingItem) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Pickup notification sent to ${clothingItem.name}")));
+    } catch (e) {
+      print('Notification error: $e');
+    }
+  }
+
+  void _showUpdatePaymentDialog(ClothingItem clothingItem) async {
+    final depositController = TextEditingController();
+    final paymentTypeController = TextEditingController(text: "Cash");
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Update Payment for ${clothingItem.name}"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: depositController,
+                  decoration: InputDecoration(
+                      labelText: "Deposit",
+                      hintText: "Enter Deposit amount",
+                      border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                DropdownButtonFormField<String>(
+                  value: paymentTypeController.text,
+                  decoration: InputDecoration(labelText: "Payment Type"),
+                  items: ["Cash", "Card", "Bank Transfer", "Mpesa"].map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(type),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    paymentTypeController.text = value!;
+                  },
+                )
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel')),
+              ElevatedButton(
+                  onPressed: () {
+                    _processPayment(clothingItem, depositController.text,
+                        paymentTypeController.text);
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("Add Payment"))
+            ],
+          );
+        });
+  }
+
+  void _processPayment(ClothingItem clothingItem, String depositAmount,
+      String paymentType) async {
+    PaymentEntry newPayment = PaymentEntry(
+      deposit: depositAmount,
+      balance: (double.parse(clothingItem.charges) -
+              (clothingItem.paymentEntries
+                      .fold(0, (sum, entry) => sum + int.parse(entry.deposit)) +
+                  double.parse(depositAmount)))
+          .toString(),
+      paymentDate: DateTime.now(),
+      paymentType: paymentType,
+    );
+
+    clothingItem.paymentEntries.add(newPayment);
+    ClotthingManager.saveClothingItem(clothingItems);
+    setState(() {
+      _loadClothingItems();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Payment of $depositAmount processed'),
+    ));
   }
 
   Future<void> _uniformSales() async {
