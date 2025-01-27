@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/clothesentrymodel/clothingandrepairsales.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
+import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
@@ -875,7 +877,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: const Text("Sell Uniform"),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => Curtainsalespage()));
+                    },
                     child: const Text("Sell Curtains"),
                   ),
                   TextButton(
@@ -919,7 +926,15 @@ class _MyHomePageState extends State<MyHomePage> {
                             MaterialPageRoute(
                                 builder: (context) => const ContactsPage()));
                       },
-                      child: const Text("Contacts"))
+                      child: const Text("Contacts")),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SalesSummary()));
+                      },
+                      child: const Text("New Clothes Sales"))
                 ]))
               ],
             ),

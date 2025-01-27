@@ -146,6 +146,8 @@ class ClotthingManager {
       rethrow;
     }
   }
+
+  
 }
 
 class ClothingItemIdentifier {
@@ -188,4 +190,48 @@ extension ClothingItemSearch on ClotthingManager {
       return [];
     }
   }
+}
+
+class PendingBalance {
+  final String customerName;
+  final double amount;
+
+  PendingBalance(this.customerName, this.amount);
+}
+
+double calculateTotalSales(List<ClothingItem> items) {
+  return items.fold(0.0, (sum, item) => sum + double.parse(item.charges));
+}
+
+Map<String, double> getPaymentTypeBreakdown(List<ClothingItem> items) {
+  final breakdown = <String, double>{};
+  
+  for (var item in items) {
+    for (var payment in item.paymentEntries) {
+      breakdown.update(
+        payment.paymentType,
+        (value) => value + double.parse(payment.deposit),
+        ifAbsent: () => double.parse(payment.deposit),
+      );
+    }
+  }
+  
+  return breakdown;
+}
+
+List<PendingBalance> getPendingBalances(List<ClothingItem> items) {
+  return items.where((item) {
+    final totalPaid = item.paymentEntries.fold(
+      0.0,
+      (sum, payment) => sum + double.parse(payment.deposit),
+    );
+    return totalPaid < double.parse(item.charges);
+  }).map((item) {
+    final totalPaid = item.paymentEntries.fold(
+      0.0,
+      (sum, payment) => sum + double.parse(payment.deposit),
+    );
+    final balance = double.parse(item.charges) - totalPaid;
+    return PendingBalance(item.name, balance);
+  }).toList();
 }
