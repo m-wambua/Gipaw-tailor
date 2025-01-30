@@ -56,7 +56,12 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                     }))
         ],
       ),
-      floatingActionButton: FloatingActionButton(onPressed: () {}),
+      floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            _newOrRepair();
+          },
+          tooltip: "New Curtain",
+          child: const Icon(Icons.add)),
     );
   }
 
@@ -77,7 +82,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 'Material Owner: ${curtainItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
           ),
           ListTile(
-            title: Text('Measurements: ${curtainItem.measurements}'),
+            title: Text('Notes: ${curtainItem.notes}'),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -248,6 +253,36 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     ));
   }
 
+  Future<void> _newOrRepair() async {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('New or Repair'),
+            content: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('New'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _newCurtain('New Curtain');
+                  },
+                ),
+                ListTile(
+                  title: const Text('Repair'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addSample();
+                  },
+                )
+              ],
+            ),
+          );
+        });
+  }
+
   void _newCurtain(String newCurtain) async {
     final formKey = GlobalKey<FormState>();
     List<Map<String, dynamic>> paymentPairs = [
@@ -267,106 +302,154 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
 
     bool materialOwner = false;
     final paymentTypes = ["Cash", "Card", "Bank Transfer", "Mpesa"];
+    final curtainTypes = ["Rings", "Hooks", "Other"];
+
     await showDialog(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
               scrollable: true,
               title: const Text("New Curtain"),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                            child: TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(labelText: "Name"),
-                          validator: (value) => value == null || value.isEmpty
-                              ? "Name is required"
-                              : null,
-                        )),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: TextFormField(
-                          controller: _phoneNumberController,
-                          decoration:
-                              const InputDecoration(labelText: "Phone Number"),
-                          validator: (value) => value == null || value.isEmpty
-                              ? "Phone Number is required"
-                              : null,
-                          keyboardType: TextInputType.phone,
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      decoration: const InputDecoration(
-                          labelText: "Email", border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Radio(
-                          value: true,
-                          groupValue: materialOwner,
-                          onChanged: (value) {
-                            setState(() {
-                              materialOwner = value!;
-                            });
-                          },
+              content: Container(
+                width: double.infinity,
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: TextFormField(
+                                controller: _nameController,
+                                decoration:
+                                    const InputDecoration(labelText: "Name"),
+                                validator: (value) =>
+                                    value == null || value.isEmpty
+                                        ? "Name is required"
+                                        : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: TextFormField(
+                                controller: _phoneNumberController,
+                                decoration: const InputDecoration(
+                                    labelText: "Phone Number"),
+                                validator: (value) =>
+                                    value == null || value.isEmpty
+                                        ? "Phone Number is required"
+                                        : null,
+                                keyboardType: TextInputType.phone,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Text("Customer Material"),
-                        Radio(
-                            value: false,
-                            groupValue: materialOwner,
-                            onChanged: (value) {
-                              setState(() {
-                                materialOwner = value!;
-                              });
-                            }),
-                        const Text("Own Material"),
-                        const SizedBox(
-                          height: 10,
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        decoration: const InputDecoration(
+                            labelText: "Email", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 5),
+                      Container(
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Row(
+                              children: [
+                                Radio(
+                                  value: true,
+                                  groupValue: materialOwner,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      materialOwner = value!;
+                                    });
+                                  },
+                                ),
+                                const Text("Customer Material"),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Radio(
+                                    value: false,
+                                    groupValue: materialOwner,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        materialOwner = value!;
+                                      });
+                                    }),
+                                const Text("Own Material"),
+                              ],
+                            ),
+                          ],
                         ),
-                        Column(
-                          children:
-                              measurementPairs.asMap().entries.map((entry) {
-                            var pair = entry.value;
-                            return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Row(children: [
-                                  Expanded(
-                                      child: TextField(
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: DropdownButtonFormField<String>(
+                              value: curtainTypes.first,
+                              items: curtainTypes.map((type) {
+                                return DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  // Handle the value change
+                                });
+                              },
+                            ),
+                          )
+                        ],
+                      ),
+
+                      // Measurement pairs section
+                      Column(
+                        children: measurementPairs.asMap().entries.map((entry) {
+                          var pair = entry.value;
+                          return Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: TextField(
                                     controller: pair['part'],
                                     decoration: const InputDecoration(
                                         labelText: 'Part',
                                         border: OutlineInputBorder()),
                                     keyboardType: TextInputType.name,
-                                  )),
-                                  const SizedBox(
-                                    width: 10,
                                   ),
-                                  Expanded(
-                                      child: TextField(
+                                ),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                  child: TextField(
                                     controller: pair['measurement'],
                                     decoration: const InputDecoration(
                                         labelText: "Measurement",
                                         border: OutlineInputBorder()),
                                     keyboardType: TextInputType.number,
-                                  ))
-                                ]));
-                          }).toList(),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton(
                                 onPressed: () {
@@ -386,196 +469,147 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                                     });
                                   });
                                 },
-                                icon: const Icon(Icons.add))
+                                icon: const Icon(Icons.add)),
                           ],
                         ),
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        TextFormField(
-                          maxLines: 10,
-                          controller: _measurementsController,
-                          decoration: const InputDecoration(
-                              labelText: 'Measurements',
-                              border: OutlineInputBorder()),
-                          validator: (value) => value!.isEmpty
-                              ? 'Please enter measurements'
-                              : null,
-                        ),
-                        TextFormField(
-                          controller: _chargesController,
-                          decoration:
-                              const InputDecoration(labelText: 'Charges'),
-                          validator: (value) =>
-                              value!.isEmpty ? 'Please enter a charge' : null,
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Column(
-                          children: [
-                            // Dynamic text fields going downwards
-
-                            Column(
-                              children:
-                                  paymentPairs.asMap().entries.map((entry) {
-                                int index = entry.key;
-                                var pair = entry.value;
-                                return Column(
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        maxLines: 3,
+                        controller: _measurementsController,
+                        decoration: const InputDecoration(
+                            labelText: 'Additional Notes',
+                            border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _chargesController,
+                        decoration: const InputDecoration(
+                            labelText: 'Charges', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                        validator: (value) =>
+                            value!.isEmpty ? 'Please enter a charge' : null,
+                      ),
+                      const SizedBox(height: 10),
+                      // Payment pairs section
+                      Column(
+                        children: paymentPairs.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          var pair = entry.value;
+                          return Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Column(
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextField(
-                                            controller: pair['deposit'],
-                                            decoration: InputDecoration(
-                                              labelText: 'Deposit ${index + 1}',
-                                              border:
-                                                  const OutlineInputBorder(),
-                                            ),
-                                            keyboardType: TextInputType.number,
-                                            onChanged: (value) {
-                                              // Automatically calculate balance when deposit changes
-                                              if (_chargesController
-                                                  .text.isNotEmpty) {
-                                                pair['balance'].text =
-                                                    CurtainpaymentEntry
-                                                        .calculateBalance(
-                                                            _chargesController
-                                                                .text,
-                                                            value);
+                                    Flexible(
+                                      child: TextField(
+                                        controller: pair['deposit'],
+                                        decoration: InputDecoration(
+                                          labelText: 'Deposit ${index + 1}',
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (value) {
+                                          if (_chargesController
+                                              .text.isNotEmpty) {
+                                            pair['balance'].text =
+                                                CurtainpaymentEntry
+                                                    .calculateBalance(
+                                                        _chargesController.text,
+                                                        value);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                      child: TextField(
+                                        controller: pair['balance'],
+                                        decoration: InputDecoration(
+                                          labelText: 'Balance ${index + 1}',
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        readOnly: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: DropdownButtonFormField<String>(
+                                        value: pair['paymentType'],
+                                        decoration: const InputDecoration(
+                                          labelText: 'Payment Type',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: paymentTypes.map((type) {
+                                          return DropdownMenuItem(
+                                            value: type,
+                                            child: Text(type),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            pair['paymentType'] = value;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                      child: TextFormField(
+                                        decoration: InputDecoration(
+                                          labelText: 'Payment Date',
+                                          border: const OutlineInputBorder(),
+                                          suffixIcon: IconButton(
+                                            icon: const Icon(
+                                                Icons.calendar_today),
+                                            onPressed: () async {
+                                              DateTime? pickedDate =
+                                                  await showDatePicker(
+                                                context: context,
+                                                initialDate:
+                                                    pair['paymentDate'],
+                                                firstDate: DateTime(2000),
+                                                lastDate: DateTime(2101),
+                                              );
+                                              if (pickedDate != null) {
+                                                setState(() {
+                                                  pair['paymentDate'] =
+                                                      pickedDate;
+                                                });
                                               }
                                             },
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: TextField(
-                                            controller: pair['balance'],
-                                            decoration: InputDecoration(
-                                              labelText: 'Balance ${index + 1}',
-                                              border:
-                                                  const OutlineInputBorder(),
-                                            ),
-                                            keyboardType: TextInputType.number,
-                                            readOnly: true, // Auto-calculated
-                                          ),
+                                        controller: TextEditingController(
+                                          text: DateFormat('yyyy-MM-dd')
+                                              .format(pair['paymentDate']),
                                         ),
-                                      ],
-                                    ),
-                                    SizedBox(
-                                      height: 15,
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child:
-                                              DropdownButtonFormField<String>(
-                                            value: pair['paymentType'],
-                                            decoration: const InputDecoration(
-                                              labelText: 'Payment Type',
-                                              border: OutlineInputBorder(),
-                                            ),
-                                            items: paymentTypes.map((type) {
-                                              return DropdownMenuItem(
-                                                value: type,
-                                                child: Text(type),
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                pair['paymentType'] = value;
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: TextFormField(
-                                            decoration: InputDecoration(
-                                              labelText: 'Payment Date',
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              suffixIcon: IconButton(
-                                                icon: const Icon(
-                                                    Icons.calendar_today),
-                                                onPressed: () async {
-                                                  DateTime? pickedDate =
-                                                      await showDatePicker(
-                                                    context: context,
-                                                    initialDate:
-                                                        pair['paymentDate'],
-                                                    firstDate: DateTime(2000),
-                                                    lastDate: DateTime(2101),
-                                                  );
-                                                  if (pickedDate != null) {
-                                                    setState(() {
-                                                      pair['paymentDate'] =
-                                                          pickedDate;
-                                                    });
-                                                  }
-                                                },
-                                              ),
-                                            ),
-                                            controller: TextEditingController(
-                                              text: DateFormat('yyyy-MM-dd')
-                                                  .format(pair['paymentDate']),
-                                            ),
-                                            readOnly: true,
-                                          ),
-                                        ),
-                                      ],
+                                        readOnly: true,
+                                      ),
                                     ),
                                   ],
-                                );
-                              }).toList(),
-                            ),
-
-                            // Add/Remove buttons
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        if (paymentPairs.length > 1) {
-                                          // Remove the last pair
-                                          paymentPairs.removeLast();
-                                        }
-                                      });
-                                    },
-                                    icon: const Icon(Icons.remove)),
-                                IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        // Add a new pair of deposit and balance controllers
-                                        paymentPairs.add({
-                                          'deposit': TextEditingController(),
-                                          'balance': TextEditingController(),
-                                          'paymentType': 'Cash',
-                                          'paymentDate': DateTime.now()
-                                        });
-                                      });
-                                    },
-                                    icon: const Icon(Icons.add))
+                                ),
                               ],
-                            )
-                          ],
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton(
                                 onPressed: () {
                                   setState(() {
                                     if (paymentPairs.length > 1) {
-                                      // Remove the last pair
                                       paymentPairs.removeLast();
                                     }
                                   });
@@ -584,43 +618,62 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                             IconButton(
                                 onPressed: () {
                                   setState(() {
-                                    // Add a new pair of deposit and balance controllers
                                     paymentPairs.add({
                                       'deposit': TextEditingController(),
-                                      'balance': TextEditingController()
+                                      'balance': TextEditingController(),
+                                      'paymentType': 'Cash',
+                                      'paymentDate': DateTime.now()
                                     });
                                   });
                                 },
-                                icon: const Icon(Icons.add))
+                                icon: const Icon(Icons.add)),
                           ],
-                        )
-                      ],
-                    ),
-                  ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                          onPressed: () {
+                            _schedulePickUp();
+                          },
+                          child: const Text("Pick Up date"))
+                    ],
+                  ),
                 ),
               ),
               actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.red),
-                        )),
-                    ElevatedButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Save',
-                          style: TextStyle(color: Colors.green),
-                        ))
-                  ],
-                )
+                Container(
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.red),
+                          )),
+                      ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              // Save logic here
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(color: Colors.green),
+                          )),
+                    ],
+                  ),
+                ),
               ],
             );
-          });
-        });
+          },
+        );
+      },
+    );
   }
 
   Future<void> _addSample() async {

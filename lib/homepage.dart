@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/clothesentrymodel/clothingandrepairsales.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
+import 'package:gipaw_tailor/curtainsales/curtainorderform.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
@@ -967,7 +968,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onPressed: () {
           _newOrRepare();
         },
-        tooltip: 'Increment',
+        tooltip: 'New Clothes or Repair',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );

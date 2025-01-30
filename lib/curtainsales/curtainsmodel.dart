@@ -8,10 +8,14 @@ class CurtainItem {
   String name;
   String phoneNumber;
   String materialOwner;
-  String measurements;
+  String curtainType;
+  String description;
+  String? imageUrl;
+  String notes;
   String part;
   String measurement;
   String charges;
+  DateTime orderDate;
   List<CurtainpaymentEntry> curtainPaymentEntries;
   DateTime? pickUpDate;
 
@@ -19,10 +23,14 @@ class CurtainItem {
     required this.name,
     required this.phoneNumber,
     required this.materialOwner,
-    required this.measurements,
+    required this.curtainType,
+    required this.description,
+  this.imageUrl , 
+    required this.notes,
     required this.part,
     required this.measurement,
     required this.charges,
+    required this.orderDate,
     this.curtainPaymentEntries = const [],
     this.pickUpDate,
   });
@@ -30,10 +38,14 @@ class CurtainItem {
         'name': name,
         'phoneNumber': phoneNumber,
         'materialOwner': materialOwner,
-        'measurements': measurements,
+        'notes': notes,
+        'curtainType': curtainType,
+        'description': description,
+        'imageUrl': imageUrl,
         'part': part,
         'measurement': measurement,
         'charges': charges,
+        'orderDate': orderDate.toIso8601String(),
         'curtainPaymentEntries':
             curtainPaymentEntries.map((e) => e.toJson()).toList(),
         'pickUpDate': pickUpDate?.toIso8601String()
@@ -42,10 +54,14 @@ class CurtainItem {
         name: json['name'],
         phoneNumber: json['phoneNumber'],
         materialOwner: json['materialOwner'],
-        measurements: json['measurements'],
+        notes: json['notes'],
         part: json['part'],
         measurement: json['measurement'],
+        curtainType: json['curtainType'],
+        description: json['description'],
+        imageUrl: json['imageUrl'],
         charges: json['charges'],
+        orderDate: DateTime.parse(json['orderDate']),
         curtainPaymentEntries: (json['curtainPaymentEntries'] as List)
             .map((entry) => CurtainpaymentEntry.fromJson(entry))
             .toList(),
@@ -156,7 +172,7 @@ double calculateTotalSales(List<ClothingItem> items) {
 
 Map<String, double> getPaymentTypeBreakdown(List<ClothingItem> items) {
   final breakdown = <String, double>{};
-  
+
   for (var item in items) {
     for (var payment in item.paymentEntries) {
       breakdown.update(
@@ -166,7 +182,7 @@ Map<String, double> getPaymentTypeBreakdown(List<ClothingItem> items) {
       );
     }
   }
-  
+
   return breakdown;
 }
 
