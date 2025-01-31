@@ -4,6 +4,7 @@ import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
 import 'package:gipaw_tailor/curtainsales/curtainorderform.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
+import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
@@ -42,11 +43,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final double sidebarWidth = 250.0;
 
   List<ClothingItem> clothingItems = [];
+  List<CurtainItem> curtainItems = [];
 
   @override
   void initState() {
     super.initState();
     _loadClothingItems();
+    _loadCurtainItems();
   }
 
   Future<void> _loadClothingItems() async {
@@ -58,6 +61,21 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error loading clothing items')));
+    }
+  }
+
+  Future<void> _loadCurtainItems() async {
+    try {
+      final loadedCurtainItems = await CurtainManager.loadCurtainItems();
+      setState(() {
+        curtainItems = loadedCurtainItems;
+        print(curtainItems);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error Loading Curtain Items")));
+
+      print('Error loading curtain items: $e');
     }
   }
 
@@ -752,20 +770,42 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text('New Piece or Repair'),
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            title: const Text('Sell Items'),
+            content: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton(
-                    onPressed: () {
-                      _newPiece("New Clothing");
-                    },
-                    child: const Text('New Piece')),
-                ElevatedButton(
-                    onPressed: () {
-                      _repair("Repair");
-                    },
-                    child: const Text('Repair'))
+                ListTile(
+                  title: const Text('New Clothing'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _newPiece("New Clothing");
+                  },
+                ),
+                ListTile(
+                  title: const Text('Repair'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _repair("Repair");
+                  },
+                ),
+                ListTile(
+                  title: const Text('Curtains'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Curtainsalespage()));
+                  },
+                ),
+                ListTile(
+                  title: const Text('Uniforms'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _uniformSales();
+                  },
+                )
               ],
             ),
           );
@@ -954,11 +994,18 @@ class _MyHomePageState extends State<MyHomePage> {
                             'No Clothing Item added yet. Add your first one!'),
                       )
                     : ListView.builder(
-                        itemCount: clothingItems.length,
+                        itemCount: clothingItems.length + curtainItems.length,
                         itemBuilder: (context, index) {
-                          final clothingItem = clothingItems[index];
+                          if (index < clothingItems.length) {
+                            final clothingItem = clothingItems[index];
+                            return GestureDetector(
+                                child: buildClothingItemCard(clothingItem));
+                          }
+                          final curtainItem =
+                              curtainItems[index - clothingItems.length];
                           return GestureDetector(
-                              child: buildClothingItemCard(clothingItem));
+                            child: buildCurtainItemCard(curtainItem),
+                          );
                         }))
           ]))
         ],
@@ -974,6 +1021,198 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Widget buildCurtainItemCard(CurtainItem curtainItem) {
+    double totalDeposited = curtainItem.curtainPaymentEntries
+        .map((entry) => double.parse(entry.deposit))
+        .fold(0, (a, b) => a + b);
+
+    double originalCharges = double.parse(curtainItem.charges);
+    double remainingBalance = originalCharges - totalDeposited;
+    return Card(
+      child: ExpansionTile(
+        title: Flexible(
+            child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [Text(curtainItem.name), Text("Curtains")],
+        )),
+        subtitle: Text('Phone Number: ${curtainItem.phoneNumber}'),
+        children: [
+          ListTile(
+            title: Text(
+                'Material Owner: ${curtainItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
+          ),
+          ListTile(
+            title: Text('Notes: ${curtainItem.notes}'),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Measurements:',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87),
+                ),
+                SizedBox(height: 8),
+                ...curtainItem.part.split(',').asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String part = entry.value.trim();
+                  String measurement =
+                      curtainItem.measurement.split(',')[index].trim();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          '$part: ',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87),
+                        ),
+                        Text(
+                          measurement,
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList()
+              ],
+            ),
+          ),
+          ListTile(
+            title: Text('Charges: ${curtainItem.charges}'),
+          ),
+          ListTile(
+            title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
+          ),
+          ListTile(
+            title: Text(
+                'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}'),
+          ),
+          ExpansionTile(
+            title: Text(
+                "Payment History(${curtainItem.curtainPaymentEntries.length} entries)"),
+            children: curtainItem.curtainPaymentEntries
+                .map((entry) => ListTile(
+                      title: Text("Deposit: ${entry.deposit}"),
+                      subtitle: Text(
+                          "Type: ${entry.paymentMethod}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                    ))
+                .toList(),
+          ),
+          ListTile(
+            title: Text(
+                'Pick Up Date: ${curtainItem.pickUpDate?.toIso8601String() ?? 'Not Scheduled'}'),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                  onPressed: () {
+                    _sendPickUpNotificationCurtain(curtainItem);
+                  },
+                  child: Text('Ready for pickup')),
+              ElevatedButton(
+                  onPressed: () {
+                    _showUpdateCurtainPaymentDialog(curtainItem);
+                  },
+                  child: Text('Update Payment'))
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  void _sendPickUpNotificationCurtain(CurtainItem clothingItem) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Pickup notification sent to ${clothingItem.name}")));
+    } catch (e) {
+      print('Notification error: $e');
+    }
+  }
+
+  void _showUpdateCurtainPaymentDialog(CurtainItem curtainItem) async {
+    final depositController = TextEditingController();
+    final paymentTypeController = TextEditingController(text: "Cash");
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Update Payment for ${curtainItem.name}"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: depositController,
+                  decoration: InputDecoration(
+                      labelText: "Deposit",
+                      hintText: "Enter Deposit amount",
+                      border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                DropdownButtonFormField<String>(
+                  value: paymentTypeController.text,
+                  decoration: InputDecoration(labelText: "Payment Type"),
+                  items: ["Cash", "Card", "Bank Transfer", "Mpesa"].map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(type),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    paymentTypeController.text = value!;
+                  },
+                )
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel')),
+              ElevatedButton(
+                  onPressed: () {
+                    _processCurtainPayment(curtainItem, depositController.text,
+                        paymentTypeController.text);
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("Add Payment"))
+            ],
+          );
+        });
+  }
+
+  void _processCurtainPayment(
+      CurtainItem curtainItem, String depositAmount, String paymentType) async {
+    CurtainpaymentEntry newPayment = CurtainpaymentEntry(
+      deposit: depositAmount,
+      balance: (double.parse(curtainItem.charges) -
+              (curtainItem.curtainPaymentEntries
+                      .fold(0, (sum, entry) => sum + int.parse(entry.deposit)) +
+                  double.parse(depositAmount)))
+          .toString(),
+      paymentDate: DateTime.now(),
+      paymentMethod: paymentType,
+    );
+
+    curtainItem.curtainPaymentEntries.add(newPayment);
+    CurtainManager.saveCurtainItem(curtainItems);
+    setState(() {
+      _loadCurtainItems();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Payment of $depositAmount processed'),
+    ));
+  }
+
   Widget buildClothingItemCard(ClothingItem clothingItem) {
     double totalDeposited = clothingItem.paymentEntries
         .map((entry) => double.parse(entry.deposit))
@@ -983,7 +1222,11 @@ class _MyHomePageState extends State<MyHomePage> {
     double remainingBalance = originalCharges - totalDeposited;
     return Card(
       child: ExpansionTile(
-        title: Text(clothingItem.name),
+        title: Flexible(
+            child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [Text(clothingItem.name), Text("Clothing")],
+        )),
         subtitle: Text('Phone Number: ${clothingItem.phoneNumber}'),
         children: [
           ListTile(

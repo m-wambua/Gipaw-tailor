@@ -71,7 +71,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   Widget buildCurtainItemCard(CurtainItem curtainItem) {
     double totalDeposited = curtainItem.curtainPaymentEntries
         .map((entry) => double.parse(entry.deposit))
-        .fold(0, (a, b) => a + b);
+        .fold(0, (a, b) => a + b); 
 
     double originalCharges = double.parse(curtainItem.charges);
     double remainingBalance = originalCharges - totalDeposited;
