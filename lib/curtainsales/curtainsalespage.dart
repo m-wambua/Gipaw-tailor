@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:intl/intl.dart';
 
@@ -48,12 +49,14 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                       child:
                           Text("No Curtain Item added yer. Add your first one"),
                     )
-                  : ListView.builder(itemBuilder: (context, index) {
-                      final curtainItem = curtainItems[index];
-                      return GestureDetector(
-                        child: buildCurtainItemCard(curtainItem),
-                      );
-                    }))
+                  : ListView.builder(
+                      itemCount: curtainItems.length,
+                      itemBuilder: (context, index) {
+                        final curtainItem = curtainItems[index];
+                        return GestureDetector(
+                          child: buildCurtainItemCard(curtainItem),
+                        );
+                      }))
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -477,9 +480,27 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                       TextFormField(
                         maxLines: 3,
                         controller: _measurementsController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                             labelText: 'Additional Notes',
-                            border: OutlineInputBorder()),
+                            border: OutlineInputBorder(),
+                            suffixIcon: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                    onPressed: () {
+                                      _addSample();
+                                    },
+                                    icon: const Icon(Icons.photo)),
+                                IconButton(
+                                    onPressed: () {
+                                      _addSample();
+                                    },
+                                    icon: const Icon(Icons.camera_alt)),
+                                IconButton(
+                                    onPressed: () {},
+                                    icon: Icon(Icons.attach_file))
+                              ],
+                            )),
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
@@ -658,8 +679,43 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                           onPressed: () {
                             if (formKey.currentState!.validate()) {
                               // Save logic here
+                              List<CurtainpaymentEntry> payments = paymentPairs
+                                  .map((pair) => CurtainpaymentEntry(
+                                      deposit: pair['deposit']!.text,
+                                      balance: pair['balance']!.text,
+                                      paymentDate: pair['paymentDate'],
+                                      paymentMethod: pair['paymentType']))
+                                  .toList();
+                              CurtainItem newItem = CurtainItem(
+                                  name: _nameController.text,
+                                  phoneNumber: _phoneNumberController.text,
+                                  materialOwner:
+                                      materialOwner ? 'true' : 'false',
+                                  notes: _measurementsController.text,
+                                  part: measurementPairs
+                                      .map((pair) => pair['part']!.text)
+                                      .join(','),
+                                  measurement: measurementPairs
+                                      .map((pair) => pair['measurement']!.text)
+                                      .join(','),
+                                  curtainType: curtainTypes.first,
+                                  charges: _chargesController.text,
+                                  orderDate: DateTime.now(),
+                                  curtainPaymentEntries: payments);
+                              setState(() {
+                                curtainItems.add(newItem);
+                              });
+
+                              String curtainItemName =
+                                  ClothingItemIdentifier.generateIdentifier(
+                                      _nameController.text,
+                                      _phoneNumberController.text);
+                              CurtainManager.saveCurtainItem(curtainItems);
                               Navigator.of(context).pop();
                             }
+                            setState(() {
+                              _loadCurtainItems();
+                            });
                           },
                           child: const Text(
                             'Save',

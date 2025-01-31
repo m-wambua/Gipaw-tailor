@@ -66,7 +66,7 @@ class _CurtainOrderFormState extends State<CurtainOrderForm> {
         phoneNumber: _phoneController.text,
         materialOwner: _materialOwnerController.text,
         curtainType: _curtainTypeController.text,
-        description: _descriptionController.text,
+        
         notes: _measurementsController.text,
         part: _partController.text,
         measurement: _measurementController.text,

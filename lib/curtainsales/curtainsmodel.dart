@@ -9,7 +9,7 @@ class CurtainItem {
   String phoneNumber;
   String materialOwner;
   String curtainType;
-  String description;
+
   String? imageUrl;
   String notes;
   String part;
@@ -24,8 +24,7 @@ class CurtainItem {
     required this.phoneNumber,
     required this.materialOwner,
     required this.curtainType,
-    required this.description,
-  this.imageUrl , 
+    this.imageUrl,
     required this.notes,
     required this.part,
     required this.measurement,
@@ -40,7 +39,6 @@ class CurtainItem {
         'materialOwner': materialOwner,
         'notes': notes,
         'curtainType': curtainType,
-        'description': description,
         'imageUrl': imageUrl,
         'part': part,
         'measurement': measurement,
@@ -58,7 +56,6 @@ class CurtainItem {
         part: json['part'],
         measurement: json['measurement'],
         curtainType: json['curtainType'],
-        description: json['description'],
         imageUrl: json['imageUrl'],
         charges: json['charges'],
         orderDate: DateTime.parse(json['orderDate']),
@@ -116,15 +113,18 @@ class CurtainManager {
       if (!await curtainDir.exists()) {
         await curtainDir.create(recursive: true);
         if (await curtainDir.exists()) {
-          final curtainFile = File(path.join(curtainDirPath, 'curtain.json'));
-          await curtainFile.writeAsString(
-              curtainItems.map((e) => e.toJson()).toList().toString());
+          print('Curtain directory created');
+        } else {
+          print("Failed to create curtain directory");
+          return;
         }
-      } else {
-        final curtainFile = File(path.join(curtainDirPath, 'curtain.json'));
-        await curtainFile.writeAsString(
-            curtainItems.map((e) => e.toJson()).toList().toString());
       }
+
+      final filePath = path.join(curtainDirPath, 'curtain.json');
+      final file = File(filePath);
+      final jsonList = curtainItems.map((ci) => ci.toJson()).toList();
+      await file.writeAsString(json.encode(jsonList));
+      print("Curtain item saved");
     } catch (e) {
       print('Error saving curtain items: $e');
       rethrow;
@@ -135,19 +135,15 @@ class CurtainManager {
     try {
       const baseDir = 'lib/curtainsales/curtainsstorage';
       final curtainDirPath = path.join(baseDir);
-      final curtainDir = Directory(curtainDirPath);
-      if (await curtainDir.exists()) {
-        final curtainFile = File(path.join(curtainDirPath, 'curtain.json'));
-        if (await curtainFile.exists()) {
-          final curtainJson = await curtainFile.readAsString();
-          final curtainList = (json.decode(curtainJson) as List)
-              .map((e) => CurtainItem.fromJson(e))
-              .toList();
-          return curtainList;
-        } else {
-          print('Curtain file does not exist');
-          return [];
-        }
+      final filePath = path.join(curtainDirPath, "curtain.json");
+      final file = File(filePath);
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(contents);
+        final List<CurtainItem> curtainItems = jsonList
+            .map((jsonItems) => CurtainItem.fromJson(jsonItems))
+            .toList();
+        return curtainItems;
       } else {
         print('Curtain directory does not exist');
         return [];
