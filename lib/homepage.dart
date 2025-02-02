@@ -8,6 +8,10 @@ import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
+import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
+import 'package:gipaw_tailor/signinpage/signinpage.dart';
+import 'package:gipaw_tailor/signinpage/signuppage.dart';
+import 'package:gipaw_tailor/signinpage/users.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
@@ -39,6 +43,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final _chargesController = TextEditingController();
   final _commentsController = TextEditingController();
   String stockPath = 'lib/uniforms/stock/stock.json';
+
+  final List<UserRole> allowedRoles = [];
 
   final double sidebarWidth = 250.0;
 
@@ -911,6 +917,99 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Expanded(
                     child: ListView(padding: EdgeInsets.zero, children: [
+                  /*
+                      ProtectedNavigationButton(text: "Sell Uniform",
+                       allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
+                        onPressed: _uniformSales),
+
+                        ProtectedNavigationButton(text: "Sell Curtains",
+                         allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
+                          onPressed: (){ 
+                            Navigator.push( 
+                              context, MaterialPageRoute(builder: (context)=> Curtainsalespage())
+                            );
+                          }),
+
+                          ProtectedNavigationButton(text: "Sell New Clothes",
+                           allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
+                            onPressed: ()=> _newOrRepare()),
+
+                            ProtectedNavigationButton(text: "View Stock",
+                             allowedRoles: [UserRole.admin,UserRole.manager],
+                              onPressed: (){
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context)=> StockViewWrapper(stockFilePath: stockPath)
+                                  )
+                                );
+                              }),
+
+                              ProtectedNavigationButton(text: "Sales",
+                               allowedRoles: [UserRole.admin,UserRole.manager],
+                                onPressed: (){
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context)=> SalesViewWrapper(salesFilePath: 'lib/uniforms/sales/sales.json')
+                                    )
+                                  );
+                                }),
+
+                                ProtectedNavigationButton(text: "Reminders",
+                                 allowedRoles: [UserRole.admin,UserRole.manager],
+                                  onPressed: (){
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context)=> ReminderPage()
+                                      )
+                                    );
+                                  }),
+
+                                  ProtectedNavigationButton(text: "Contacts",
+                                   allowedRoles: [UserRole.admin,UserRole.manager],
+                                    onPressed: (){
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context)=> ContactsPage()
+                                        )
+                                      );
+                                    }),
+
+                                    ProtectedNavigationButton(text: "Sales Summary",
+                                     allowedRoles: [UserRole.admin,UserRole.manager],
+                                      onPressed: (){
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context)=> SalesSummary()
+                                          )
+                                        );
+                                      }),
+
+                                      ProtectedNavigationButton(text: "Sign Up!",
+                                       allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
+                                        onPressed: (){
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context)=> SignUpPage()
+                                            )
+                                          );
+                                        }),
+
+                                        ProtectedNavigationButton(text: "Sign In",
+                                         allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
+                                          onPressed: ()=> Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context)=> const SignInPage()
+                                            )
+                                          )
+                                        ),
+                                        */
                   TextButton(
                     onPressed: () {
                       _uniformSales();
@@ -975,7 +1074,25 @@ class _MyHomePageState extends State<MyHomePage> {
                             MaterialPageRoute(
                                 builder: (context) => SalesSummary()));
                       },
-                      child: const Text("New Clothes Sales"))
+                      child: const Text("New Clothes Sales")),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignUpPage()));
+                    },
+                    child: Text("Sign Up!"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SignInPage())),
+                    child: Text("Sign In"),
+                  ),
+                  TextButton(onPressed: (){},
+                  child: Text("Log out"),)
                 ]))
               ],
             ),
@@ -1040,6 +1157,9 @@ class _MyHomePageState extends State<MyHomePage> {
           ListTile(
             title: Text(
                 'Material Owner: ${curtainItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
+          ),
+          ListTile(
+            title: Text("Curtain Type: ${curtainItem.curtainType}"),
           ),
           ListTile(
             title: Text('Notes: ${curtainItem.notes}'),
@@ -1601,7 +1721,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
                                   children: [
-                                    Expanded(
+                                    Flexible(
                                       child: DropdownButtonFormField<String>(
                                         decoration: const InputDecoration(
                                             labelText: "Uniform Item"),

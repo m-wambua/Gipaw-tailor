@@ -5,7 +5,17 @@ const Map<String, Map<String, List<String>>> uniformItemData = {
     'prizes': ['400', '450', '500', '550']
   },
   'Dresses': {
-    'colors': ['Green', 'White', 'Black'],
+    'colors': [
+      'Green',
+      'White',
+      'Black',
+      "Red and White Boxes small",
+      "Green and White Boxes small",
+      "Murema Primary",
+      "Checked Green",
+      "Checked Red",
+      ""
+    ],
     'sizes': ['18', '20', '22', '24', '26'],
     'prizes': ['600', '650', '700', '750']
   },

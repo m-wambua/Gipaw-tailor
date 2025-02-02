@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -34,16 +33,16 @@ class _SignUpPageState extends State<SignUpPage> {
         title: Row(
           children: [
             CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.blue[50],
-              ),
+              radius: 24,
+              backgroundColor: Colors.blue[50],
+            ),
             Text.rich(TextSpan(children: [
               TextSpan(
-                  text: 'Sound',
+                  text: 'Gipaw',
                   style: TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.brown)),
               TextSpan(
-                  text: 'sphere',
+                  text: 'Tailor',
                   style: TextStyle(
                       fontWeight: FontWeight.normal, color: Colors.brown))
             ])),
@@ -51,7 +50,6 @@ class _SignUpPageState extends State<SignUpPage> {
         ),
       ),
       body: Center(
-        
         child: Container(
           color: Colors.blue[50],
           alignment: Alignment.center,
