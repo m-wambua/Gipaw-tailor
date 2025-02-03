@@ -100,7 +100,7 @@ class StockManager {
         color: entry['selectedColor'],
         size: entry['selectedSize'] ?? 'N/A',
         quantity: int.parse(entry['numberController'].text),
-        price: entry['calculatedPrice'],
+        price: entry['price'],
         date: dateStr,
       );
 

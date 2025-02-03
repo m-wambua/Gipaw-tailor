@@ -3,7 +3,6 @@ import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
 import 'package:intl/intl.dart';
 
-
 class StockViewWrapper extends StatefulWidget {
   final String stockFilePath;
 
@@ -118,7 +117,9 @@ class _StockViewPageState extends State<StockViewPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Stock Inventory"),
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.refresh))],
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.refresh))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -292,6 +293,7 @@ class _StockViewPageState extends State<StockViewPage> {
                   'selectedColor': null,
                   'selectedSize': null,
                   'selectedPrize': null,
+                  'price': null,
                   'availableColors': [],
                   'availableSizes': [],
                   'availablePrizes': [],
@@ -310,15 +312,16 @@ class _StockViewPageState extends State<StockViewPage> {
 
             void updateCalculatedPrice(int index) {
               final entry = entries[index];
-              final selectedPrize =
+              final selectedUnitPrice =
                   int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
               final quantity =
                   int.tryParse(entry['numberController'].text.trim()) ?? 0;
-              final calculatedPrice = selectedPrize * quantity;
+              final calculatedTotalPrice = selectedUnitPrice * quantity;
 
               setState(() {
-                entry['calculatedPrice'] = calculatedPrice;
-                entry['priceController'].text = calculatedPrice.toString();
+                entry['price'] = selectedUnitPrice;
+                entry['calculatedPrice'] = calculatedTotalPrice;
+                entry['priceController'].text = calculatedTotalPrice.toString();
               });
             }
 
@@ -381,8 +384,8 @@ class _StockViewPageState extends State<StockViewPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        const InputDecoration(labelText: "Color"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Color"),
                                     items: entries[index]['availableColors']
                                         .map<DropdownMenuItem<String>>((color) {
                                       return DropdownMenuItem<String>(
@@ -402,8 +405,8 @@ class _StockViewPageState extends State<StockViewPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
-                                    decoration:
-                                        const InputDecoration(labelText: "Size"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Size"),
                                     items: entries[index]['availableSizes']
                                         .map<DropdownMenuItem<String>>((size) {
                                       return DropdownMenuItem<String>(
@@ -425,8 +428,8 @@ class _StockViewPageState extends State<StockViewPage> {
                                   child: TextFormField(
                                     controller: entries[index]
                                         ['numberController'],
-                                    decoration:
-                                        const InputDecoration(labelText: "Number"),
+                                    decoration: const InputDecoration(
+                                        labelText: "Number"),
                                     keyboardType: TextInputType.number,
                                     onChanged: (value) {
                                       updateCalculatedPrice(index);
@@ -495,7 +498,9 @@ class _StockViewPageState extends State<StockViewPage> {
                           entry['selectedColor'] == null ||
                           entry['numberController'].text.isEmpty ||
                           int.tryParse(entry['numberController'].text) ==
-                              null) {
+                              null ||
+                          entry['selectedSize'] == null ||
+                          entry['price'] == null) {
                         isValid = false;
                         break;
                       }

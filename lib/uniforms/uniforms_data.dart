@@ -20,7 +20,15 @@ const Map<String, Map<String, List<String>>> uniformItemData = {
     'prizes': ['600', '650', '700', '750']
   },
   'Shorts': {
-    'colors': ['Black', 'Blue', 'White', 'Ciiko'],
+    'colors': [
+      'Black',
+      'Navy Blue',
+      'White',
+      'Ciiko',
+      'Grey',
+      'Ash Grey',
+      'Green'
+    ],
     'sizes': ['18', '20', '22', '24', '26', '28', '30', '32', '34', '36'],
     'prizes': ['450', '500', '550', '600', '650', '700', '750', '800']
   },
@@ -30,8 +38,21 @@ const Map<String, Map<String, List<String>>> uniformItemData = {
     'prizes': ['100', '150', '200']
   },
   'Trousers': {
-    'colors': ['Grey', 'Blue', 'Navy Blue'],
-    'sizes': ['20', '22', '24', '26', '28', '30', '32', '34', '36'],
+    'colors': ['Grey', 'Blue', 'Navy Blue', 'Green', 'Black', 'Khaki', 'Brown'],
+    'sizes': [
+      '20',
+      '22',
+      '24',
+      '26',
+      '28',
+      '30',
+      '32',
+      '34',
+      '36',
+      '38',
+      '40',
+      '42'
+    ],
     'prizes': [
       '500',
       '550',
