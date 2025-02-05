@@ -8,6 +8,7 @@ import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
+import 'package:gipaw_tailor/signinpage/admindash.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
 import 'package:gipaw_tailor/signinpage/signuppage.dart';
@@ -917,99 +918,115 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Expanded(
                     child: ListView(padding: EdgeInsets.zero, children: [
-                  /*
-                      ProtectedNavigationButton(text: "Sell Uniform",
-                       allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
-                        onPressed: _uniformSales),
-
-                        ProtectedNavigationButton(text: "Sell Curtains",
-                         allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
-                          onPressed: (){ 
-                            Navigator.push( 
-                              context, MaterialPageRoute(builder: (context)=> Curtainsalespage())
-                            );
-                          }),
-
-                          ProtectedNavigationButton(text: "Sell New Clothes",
-                           allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
-                            onPressed: ()=> _newOrRepare()),
-
-                            ProtectedNavigationButton(text: "View Stock",
-                             allowedRoles: [UserRole.admin,UserRole.manager],
-                              onPressed: (){
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context)=> StockViewWrapper(stockFilePath: stockPath)
-                                  )
-                                );
-                              }),
-
-                              ProtectedNavigationButton(text: "Sales",
-                               allowedRoles: [UserRole.admin,UserRole.manager],
-                                onPressed: (){
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context)=> SalesViewWrapper(salesFilePath: 'lib/uniforms/sales/sales.json')
-                                    )
-                                  );
-                                }),
-
-                                ProtectedNavigationButton(text: "Reminders",
-                                 allowedRoles: [UserRole.admin,UserRole.manager],
-                                  onPressed: (){
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context)=> ReminderPage()
-                                      )
-                                    );
-                                  }),
-
-                                  ProtectedNavigationButton(text: "Contacts",
-                                   allowedRoles: [UserRole.admin,UserRole.manager],
-                                    onPressed: (){
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context)=> ContactsPage()
-                                        )
-                                      );
-                                    }),
-
-                                    ProtectedNavigationButton(text: "Sales Summary",
-                                     allowedRoles: [UserRole.admin,UserRole.manager],
-                                      onPressed: (){
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context)=> SalesSummary()
-                                          )
-                                        );
-                                      }),
-
-                                      ProtectedNavigationButton(text: "Sign Up!",
-                                       allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
-                                        onPressed: (){
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context)=> SignUpPage()
-                                            )
-                                          );
-                                        }),
-
-                                        ProtectedNavigationButton(text: "Sign In",
-                                         allowedRoles: [UserRole.admin,UserRole.manager,UserRole.user],
-                                          onPressed: ()=> Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context)=> const SignInPage()
-                                            )
-                                          )
-                                        ),
-                                        */
+                  ProtectedNavigationButton(
+                      text: "Sell Uniform",
+                      allowedRoles: [
+                        UserRole.admin,
+                        UserRole.manager,
+                        UserRole.user
+                      ],
+                      onPressed: _uniformSales),
+                  ProtectedNavigationButton(
+                      text: "Sell Curtains",
+                      allowedRoles: [
+                        UserRole.admin,
+                        UserRole.manager,
+                        UserRole.user
+                      ],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => Curtainsalespage()));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Sell New Clothes",
+                      allowedRoles: [
+                        UserRole.admin,
+                        UserRole.manager,
+                        UserRole.user
+                      ],
+                      onPressed: () => _newOrRepare()),
+                  ProtectedNavigationButton(
+                      text: "View Stock",
+                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => StockViewWrapper(
+                                    stockFilePath: stockPath)));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Sales",
+                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SalesViewWrapper(
+                                    salesFilePath:
+                                        'lib/uniforms/sales/sales.json')));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Reminders",
+                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ReminderPage()));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Contacts",
+                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ContactsPage()));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Sales Summary",
+                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SalesSummary()));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Sign Up!",
+                      allowedRoles: [
+                        UserRole.admin,
+                        UserRole.manager,
+                        UserRole.user
+                      ],
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SignUpPage()));
+                      }),
+                  ProtectedNavigationButton(
+                      text: "Sign In",
+                      allowedRoles: [
+                        UserRole.admin,
+                        UserRole.manager,
+                        UserRole.user
+                      ],
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SignInPage()))),
+                  ProtectedNavigationButton(
+                      text: "Admin DashBoard",
+                      allowedRoles: [UserRole.admin],
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => AdminDashBoard())))
+                  /*                
                   TextButton(
                     onPressed: () {
                       _uniformSales();
@@ -1091,8 +1108,10 @@ class _MyHomePageState extends State<MyHomePage> {
                             builder: (context) => const SignInPage())),
                     child: Text("Sign In"),
                   ),
-                  TextButton(onPressed: (){},
-                  child: Text("Log out"),)
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("Log out"),
+                  )*/
                 ]))
               ],
             ),

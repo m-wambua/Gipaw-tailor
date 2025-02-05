@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
+import 'package:provider/provider.dart';
 
 class AdminDashBoard extends StatefulWidget {
   @override
@@ -59,9 +61,12 @@ class _AdminDashBoardState extends State<AdminDashBoard>
 class PendingApplicationsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final pendingApplications = authProvider.pendingApplications;
     return ListView.builder(
-        itemCount: 10,
+        itemCount: pendingApplications.length,
         itemBuilder: (context, index) {
+          final application = pendingApplications[index];
           return Card(
             margin: EdgeInsets.all(8),
             child: ListTile(
@@ -69,9 +74,9 @@ class PendingApplicationsTab extends StatelessWidget {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Username: user_${index + 1}'),
-                  Text("Email: user_${index + 1}@example.com"),
-                  Text("Applied: ${DateTime.now().toString()}")
+                  Text('Username: ${application.username}'),
+                  Text("Email: user_${application.email}"),
+                  Text("Applied: ${application.applicationDate}")
                 ],
               ),
               trailing: Row(
@@ -167,6 +172,8 @@ class PendingApplicationsTab extends StatelessWidget {
 class ActiveUsersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final users = authProvider.activeUsers;
     return Column(
       children: [
         Padding(
@@ -181,17 +188,17 @@ class ActiveUsersTab extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: 20, // Replace with actual users count
+            itemCount: users.length, // Replace with actual users count
             itemBuilder: (context, index) {
+              final user = users[index];
               return Card(
                 margin: EdgeInsets.all(8),
                 child: ListTile(
                   leading: CircleAvatar(
                     child: Text('U${index + 1}'),
                   ),
-                  title: Text('User ${index + 1}'),
-                  subtitle: Text(
-                      'Role: ${UserRole.values[index % 3].toString().split('.').last}'),
+                  title: Text(user.username ?? 'No Username'),
+                  subtitle: Text('Role: ${user.role}'),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
                       PopupMenuItem(
@@ -330,6 +337,8 @@ class ActiveUsersTab extends StatelessWidget {
 class UserActivityTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final activities = authProvider.userActivities;
     return Column(
       children: [
         Padding(
@@ -371,8 +380,9 @@ class UserActivityTab extends StatelessWidget {
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: 50, // Replace with actual activity count
+            itemCount: activities.length, // Replace with actual activity count
             itemBuilder: (context, index) {
+              final activity = activities[index];
               return Card(
                 margin: EdgeInsets.all(8),
                 child: ListTile(
@@ -381,10 +391,9 @@ class UserActivityTab extends StatelessWidget {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('User: user_${index + 1}'),
+                      Text('User: ${activity.username}'),
                       Text('Action: ${index % 2 == 0 ? "Login" : "Logout"}'),
-                      Text(
-                          'Time: ${DateTime.now().subtract(Duration(minutes: index)).toString()}'),
+                      Text('Time: ${activity.timestamp}'),
                     ],
                   ),
                 ),
@@ -395,4 +404,15 @@ class UserActivityTab extends StatelessWidget {
       ],
     );
   }
+}
+
+class UserActivity {
+  final String username;
+  final String actionType;
+  final String timestamp;
+
+  UserActivity(
+      {required this.username,
+      required this.timestamp,
+      required this.actionType});
 }
