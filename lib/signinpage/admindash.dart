@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashBoard extends StatefulWidget {
   @override
@@ -415,4 +418,39 @@ class UserActivity {
       {required this.username,
       required this.timestamp,
       required this.actionType});
+
+  Map<String, dynamic> toJson() =>
+      {"username": username, 'actionType': actionType, 'timestamp': timestamp};
+
+  factory UserActivity.fromJson(Map<String, dynamic> json) => UserActivity(
+      username: json['username'],
+      timestamp: json['timestamp'],
+      actionType: json['actionType']);
+
+  static Future<void> saveActivities(List<UserActivity> activities) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonActivities =
+        activities.map((activity) => activity.toJson()).toList();
+    await prefs.setStringList('user_activities',
+        jsonActivities.map((activity) => json.encode(activity)).toList());
+  }
+
+  static Future<List<UserActivity>> loadActivities() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedActivities = prefs.getStringList('user_activities') ?? [];
+
+    return savedActivities.map((jsonString) {
+      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      return UserActivity.fromJson(jsonMap);
+    }).toList();
+  }
+
+  static Future<void> maintainActivityLog(List<UserActivity> activities,
+      {int maxEntries = 500}) async {
+    if (activities.length > maxEntries) {
+      final trimmedActivites =
+          activities.sublist(activities.length - maxEntries);
+      await saveActivities(trimmedActivites);
+    }
+  }
 }

@@ -13,10 +13,32 @@ class AuthProvider with ChangeNotifier {
   List<User> get users => _users;
   List<UserApplication> _pendingApplications = [];
   List<UserApplication> get pendingApplications => _pendingApplications;
+  List<UserApplication> _applications = [];
+  List<User> get activeUsers => _users
+      .where((user) => user.isDisabled != null && !user.isDisabled!)
+      .toList();
 
-  List<User> get activeUsers =>
-      _users.where((user) => user.isDisabled != null && !user.isDisabled!).toList();
   // Return the list of active users
+  AuthProvider() {
+    _loadSavedActivities();
+    _loadSavedApplications();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    _users = await User.loadUsers();
+    notifyListeners();
+  }
+
+  Future<void> _loadSavedApplications() async {
+    _applications = await UserApplication.loadApplications();
+    notifyListeners();
+  }
+
+  Future<void> _loadSavedActivities() async {
+    _userActivities = await UserActivity.loadActivities();
+    notifyListeners();
+  }
 
   Future<bool> signIn(
       String identifier, String password, SignInMethod method) async {
@@ -41,8 +63,8 @@ class AuthProvider with ChangeNotifier {
         }
       }
 
-      final usersJson = prefs.getStringList('users') ?? [];
-      final users = usersJson.map((json) => User.fromJson(json)).toList();
+      //  final usersJson = prefs.getStringList('users') ?? [];
+      //  final users = usersJson.map((json) => User.fromJson(json)).toList();
 
       final matchingUser = users.firstWhere(
         (user) {
@@ -91,11 +113,17 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void logUserActivity(String username, String actionType) {
-    _userActivities.add(UserActivity(
+  void logUserActivity(String username, String actionType) async {
+    final newActivity = (UserActivity(
         username: username,
         timestamp: DateTime.now().toIso8601String(),
         actionType: actionType));
+    _userActivities.add(newActivity);
+
+    await UserActivity.saveActivities(_userActivities);
+
+    await UserActivity.maintainActivityLog(_userActivities);
+    notifyListeners();
   }
 
   void signOut() {
@@ -113,12 +141,39 @@ class AuthProvider with ChangeNotifier {
     return allowedRoles.contains(_currentUser!.role);
   }
 
-  void updateUserRole(User user, UserRole newRole) {
+  void updateUserRole(User user, UserRole newRole) async {
     final index = _users.indexWhere((u) => u.id == user.id);
     if (index != -1) {
-      _users[index] = user.copyWith(role: newRole);
+      _users[index] = User(
+          id: _users[index].id,
+          password: _users[index].password,
+          role: newRole,
+          isDisabled: _users[index].isDisabled,
+          email: _users[index].email,
+          phoneNumber: _users[index].phoneNumber,
+          username: _users[index].username);
+      await User.saveUsers(_users);
+
+      user.copyWith(role: newRole);
       logUserActivity(
           user.username ?? 'Unknown', 'Role Changed to ${newRole.toString()}');
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleUserStatus(String userId) async {
+    final userIndex = _users.indexWhere((user) => user.id == userId);
+    if (userIndex != -1) {
+      _users[userIndex] = User(
+        id: _users[userIndex].id,
+        username: _users[userIndex].username,
+        email: _users[userIndex].email,
+        role: _users[userIndex].role,
+        isDisabled: _users[userIndex].isDisabled,
+        phoneNumber: _users[userIndex].phoneNumber,
+        password: _users[userIndex].password,
+      );
+      await User.saveUsers(_users);
       notifyListeners();
     }
   }
@@ -163,9 +218,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  void deleteUser(User user) {
+  void deleteUser(User user) async {
     _users.removeWhere((u) => u.id == user.id);
     logUserActivity(user.username ?? 'Unknown', 'Account Deleted');
+    await User.saveUsers(_users);
     notifyListeners();
   }
 }

@@ -54,7 +54,7 @@ class User {
     );
   }
 
-  factory User.fromApplication(UserApplication application, UserRole role){
+  factory User.fromApplication(UserApplication application, UserRole role) {
     return User(
       id: application.id,
       username: application.username,
@@ -66,20 +66,38 @@ class User {
   }
 
   // Create User object from JSON string
-  factory User.fromJson(String jsonString) {
-    final data = json.decode(jsonString);
+  factory User.fromJson(Map<
+    String,dynamic> json) {
+    
     return User(
-      id: data['id'],
-      username: data['username'],
-      email: data['email'],
-      phoneNumber: data['phoneNumber'],
-      password: data['password'],
+      id: json['id'],
+      username: json['username'],
+      email: json['email'],
+      phoneNumber: json['phoneNumber'],
+      password: json['password'],
       role: UserRole.values.firstWhere(
-        (e) => e.toString() == data['role'],
+        (e) => e.toString() == json['role'],
         orElse: () => UserRole.user,
       ),
-      isDisabled: data['isDisabled'] ?? false,
+      isDisabled: json['isDisabled'] ?? false,
     );
+  }
+
+  static Future<void> saveUsers(List<User> users) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonUsers = users.map((user) => user.toJson()).toList();
+    await prefs.setStringList(
+        "active_users", jsonUsers.map((user) => json.encode(user)).toList());
+  }
+
+  static Future<List<User>> loadUsers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonUsers = prefs.getStringList("active_users") ?? [];
+
+    return jsonUsers.map((jsonString) {
+      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      return User.fromJson(jsonMap);
+    }).toList();
   }
 }
 
@@ -116,4 +134,47 @@ class UserApplication {
     required this.applicationDate,
   });
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'username': username,
+        'email': email,
+        'applicationDate': applicationDate.toIso8601String()
+      };
+  factory UserApplication.fromJson(Map<String, dynamic> json) =>
+      UserApplication(
+          username: json['username'],
+          applicationDate: json['applicationDate'],
+          email: json['email'],
+          id: json['id']);
+
+  static Future<void> saveApplications(
+      List<UserApplication> applications) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonApplications =
+        applications.map((application) => application.toJson()).toList();
+    await prefs.setStringList(
+        'user_application',
+        jsonApplications
+            .map((application) => json.encode(application))
+            .toList());
+  }
+
+  static Future<List<UserApplication>> loadApplications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonApplications = prefs.getStringList('user_application') ?? [];
+
+    return jsonApplications.map((jsonString) {
+      final Map<String, dynamic> jsonMap = json.decode(jsonString);
+      return UserApplication.fromJson(jsonMap);
+    }).toList();
+  }
+
+  static Future<void> maintainApplications(List<UserApplication> applications,
+      {int maxEntires = 500}) async {
+    if (applications.length > maxEntires) {
+      final trimmedApplications =
+          applications.sublist(applications.length - maxEntires);
+      await saveApplications(trimmedApplications);
+    }
+  }
 }
