@@ -14,9 +14,8 @@ class AuthProvider with ChangeNotifier {
   List<UserApplication> _pendingApplications = [];
   List<UserApplication> get pendingApplications => _pendingApplications;
   List<UserApplication> _applications = [];
-  List<User> get activeUsers => _users
-      .where((user) => user.isDisabled != null && !user.isDisabled!)
-      .toList();
+  List<User> get activeUsers =>
+      _users.where((user) => user.isActive ?? false).toList();
 
   // Return the list of active users
   AuthProvider() {
@@ -224,4 +223,9 @@ class AuthProvider with ChangeNotifier {
     await User.saveUsers(_users);
     notifyListeners();
   }
+  void addUserActivity(UserActivity activity) async {
+  userActivities.add(activity);
+  await UserActivity.saveActivities(userActivities);
+  notifyListeners();
+}
 }

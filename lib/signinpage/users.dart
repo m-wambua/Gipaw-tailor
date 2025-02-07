@@ -10,6 +10,7 @@ class User {
   final String password; // In real app, store hashed password
   final UserRole role;
   final bool? isDisabled;
+  final bool? isActive;
 
   User({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     required this.password,
     required this.role,
     this.isDisabled = false,
+    this.isActive=true
   });
 
   // Convert User object to JSON string
@@ -66,9 +68,7 @@ class User {
   }
 
   // Create User object from JSON string
-  factory User.fromJson(Map<
-    String,dynamic> json) {
-    
+  factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       username: json['username'],

@@ -173,69 +173,105 @@ class PendingApplicationsTab extends StatelessWidget {
 }
 
 class ActiveUsersTab extends StatelessWidget {
+  final _searchController = TextEditingController();
+
+  // Helper method to check if a user is currently active
+  bool isUserActive(String username, List<UserActivity> activities) {
+    // Sort activities by timestamp in descending order
+    final userActivities = activities
+        .where((activity) => activity.username == username)
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    // If user has no activities, they're not active
+    if (userActivities.isEmpty) return false;
+
+    // Check if their most recent activity was a login
+    return userActivities.first.actionType.toLowerCase() == 'login';
+  }
+
+  // Get unique users from activity log
+  List<String> getActiveUsers(List<UserActivity> activities) {
+    final uniqueUsers = activities
+        .map((activity) => activity.username)
+        .toSet()
+        .where((username) => isUserActive(username!, activities))
+        .toList();
+    return uniqueUsers;
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final users = authProvider.activeUsers;
+    final activities = authProvider.userActivities;
+    final activeUsers = getActiveUsers(activities);
+
     return Column(
       children: [
         Padding(
           padding: EdgeInsets.all(8),
           child: TextField(
+            controller: _searchController,
             decoration: InputDecoration(
               labelText: 'Search Users',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
             ),
+            onChanged: (value) {
+              // Implement search if needed
+            },
           ),
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: users.length, // Replace with actual users count
+            itemCount: activeUsers.length,
             itemBuilder: (context, index) {
-              final user = users[index];
+              final username = activeUsers[index];
+              // Get last activity time for this user
+              final lastActivity = activities
+                  .where((activity) => activity.username == username)
+                  .reduce(
+                      (a, b) => a.timestamp.compareTo(b.timestamp) > 0 ? a : b);
+
               return Card(
                 margin: EdgeInsets.all(8),
                 child: ListTile(
                   leading: CircleAvatar(
-                    child: Text('U${index + 1}'),
+                    child: Text(username[0].toUpperCase()),
                   ),
-                  title: Text(user.username ?? 'No Username'),
-                  subtitle: Text('Role: ${user.role}'),
+                  title: Text(username),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Last Active: ${lastActivity.timestamp}'),
+                      Text('Status: Active'),
+                    ],
+                  ),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('Edit Role'),
-                        ),
-                      ),
                       PopupMenuItem(
                         value: 'disable',
                         child: ListTile(
                           leading: Icon(Icons.block),
-                          title: Text('Disable Account'),
+                          title: Text('Force Logout'),
                         ),
                       ),
                       PopupMenuItem(
-                        value: 'delete',
+                        value: 'activity',
                         child: ListTile(
-                          leading: Icon(Icons.delete),
-                          title: Text('Delete Account'),
+                          leading: Icon(Icons.history),
+                          title: Text('View Activity'),
                         ),
                       ),
                     ],
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       switch (value) {
-                        case 'edit':
-                          _showEditRoleDialog(context, index);
-                          break;
                         case 'disable':
-                          _showDisableAccountDialog(context, index);
+                          _showForceLogoutDialog(context, username);
                           break;
-                        case 'delete':
-                          _showDeleteAccountDialog(context, index);
+                        case 'activity':
+                          _showUserActivityDialog(
+                              context, username, activities);
                           break;
                       }
                     },
@@ -249,46 +285,12 @@ class ActiveUsersTab extends StatelessWidget {
     );
   }
 
-  void _showEditRoleDialog(BuildContext context, int index) {
+  void _showForceLogoutDialog(BuildContext context, String username) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Edit User Role'),
-        content: DropdownButton<UserRole>(
-          value: UserRole.user,
-          items: UserRole.values.map((role) {
-            return DropdownMenuItem(
-              value: role,
-              child: Text(role.toString().split('.').last),
-            );
-          }).toList(),
-          onChanged: (UserRole? newRole) {
-            // Handle role change
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Update user role
-              Navigator.pop(context);
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDisableAccountDialog(BuildContext context, int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Disable Account'),
-        content: Text('Are you sure you want to disable this account?'),
+        title: Text('Force Logout User'),
+        content: Text('Are you sure you want to force logout this user?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -298,38 +300,60 @@ class ActiveUsersTab extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
             ),
-            onPressed: () {
-              // Disable account
+            onPressed: () async {
+              // Add a logout activity
+              final newActivity = UserActivity(
+                username: username,
+                timestamp: DateTime.now().toIso8601String(),
+                actionType: 'Logout (Forced by Admin)',
+              );
+
+              final authProvider =
+                  Provider.of<AuthProvider>(context, listen: false);
+              authProvider.addUserActivity(newActivity);
               Navigator.pop(context);
             },
-            child: Text('Disable'),
+            child: Text('Force Logout'),
           ),
         ],
       ),
     );
   }
 
-  void _showDeleteAccountDialog(BuildContext context, int index) {
+  void _showUserActivityDialog(
+      BuildContext context, String username, List<UserActivity> allActivities) {
+    final userActivities = allActivities
+        .where((activity) => activity.username == username)
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Account'),
-        content:
-            Text('Are you sure you want to permanently delete this account?'),
+        title: Text('Activity History - $username'),
+        content: Container(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: userActivities.length,
+            itemBuilder: (context, index) {
+              final activity = userActivities[index];
+              return ListTile(
+                leading: Icon(
+                  activity.actionType.toLowerCase() == 'login'
+                      ? Icons.login
+                      : Icons.logout,
+                ),
+                title: Text(activity.actionType),
+                subtitle: Text(activity.timestamp),
+              );
+            },
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            onPressed: () {
-              // Delete account
-              Navigator.pop(context);
-            },
-            child: Text('Delete'),
+            child: Text('Close'),
           ),
         ],
       ),
