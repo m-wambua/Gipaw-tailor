@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/signinpage/authorization.dart';
+import 'package:gipaw_tailor/signinpage/signinpage.dart';
+import 'package:gipaw_tailor/signinpage/users.dart';
+import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -180,7 +185,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         !_hasSpecialChar ||
                         !_hasNumber ||
                         !_hasUpperCase ||
-                        _hasLowerCase) {
+                        !_hasLowerCase) {
                       return 'Password does not meet requirements';
                     }
                     return null;
@@ -241,7 +246,16 @@ class _SignUpPageState extends State<SignUpPage> {
                   children: [
                     Expanded(
                         child: ElevatedButton(
-                            onPressed: () {}, child: const Text('Sign Up'))),
+                            onPressed: () {
+                              _submitForm(context);
+
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SignInPage()));
+                            },
+                            child: const Text('Sign Up'))),
                     Expanded(
                         child: TextButton(
                       onPressed: () {
@@ -262,18 +276,45 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  void _submitForm(BuildContext context) {
-    // Handle form submission here
-    // This is where tou would typically send the data to your backend
-    var formData = {
-      'Firstname': _firstName,
-      'LastName': _lastName,
-      'UserName': _username,
-      'Email': _email,
-      'PhoneNumber': _phoneNumber,
-      'Password': _password,
-      'ConfirmPassword': _confirmPassword,
-    };
+  void _submitForm(BuildContext context) async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        final uuid = Uuid();
+        final application = UserApplication(
+          id: uuid.v4(),
+          username: _username,
+          email: _email,
+          firstName: _firstName,
+          lastName: _lastName,
+          phoneNumber: _phoneNumber,
+          password: _password, // Should be hashed in production
+          applicationDate: DateTime.now(),
+        );
+
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.addPendingApplication(application);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Application submitted for review. You will be notified when approved.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error submitting application: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _validatePassword(String value) {

@@ -66,6 +66,11 @@ class PendingApplicationsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final pendingApplications = authProvider.pendingApplications;
+    if (pendingApplications.isEmpty) {
+      return Center(
+        child: Text("No pending applications"),
+      );
+    }
     return ListView.builder(
         itemCount: pendingApplications.length,
         itemBuilder: (context, index) {
@@ -77,9 +82,12 @@ class PendingApplicationsTab extends StatelessWidget {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                      "Application from: ${application.firstName} ${application.lastName}"),
                   Text('Username: ${application.username}'),
-                  Text("Email: user_${application.email}"),
-                  Text("Applied: ${application.applicationDate}")
+                  Text("Email: ${application.email}"),
+                  Text(
+                      "Applied: ${_formatDate(application.applicationDate.toString())}")
                 ],
               ),
               trailing: Row(
@@ -87,7 +95,7 @@ class PendingApplicationsTab extends StatelessWidget {
                 children: [
                   IconButton(
                       onPressed: () {
-                        _showApprovalDialog(context, index);
+                        _showApprovalDialog(context, index, application);
                       },
                       icon: Icon(
                         Icons.check,
@@ -95,7 +103,7 @@ class PendingApplicationsTab extends StatelessWidget {
                       )),
                   IconButton(
                       onPressed: () {
-                        _showRejectionDialog(context, index);
+                        _showRejectionDialog(context, index, application);
                       },
                       icon: Icon(
                         Icons.close,
@@ -108,47 +116,74 @@ class PendingApplicationsTab extends StatelessWidget {
         });
   }
 
-  void _showApprovalDialog(BuildContext context, int index) {
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-              title: Text('Approve Application'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Select role for the new user:"),
-                  DropdownButton<UserRole>(
-                      value: UserRole.user,
-                      items: UserRole.values.map((role) {
-                        return DropdownMenuItem(
-                          value: role,
-                          child: Text(role.toString().split('.').last),
-                        );
-                      }).toList(),
-                      onChanged: (UserRole? newRole) {
-                        //Handle role selection
-                      })
-                ],
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel')),
-                TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text('Approve'))
-              ],
-            ));
+  String _formatDate(String date) {
+    final DateTime dateTime = DateTime.parse(date);
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 
-  void _showRejectionDialog(BuildContext context, int index) {
+  void _showApprovalDialog(
+      BuildContext context, int index, UserApplication application) {
+    UserRole selectedRole = UserRole.user;
+
+    showDialog(
+        context: context,
+        builder: (context) => StatefulBuilder(
+            builder: (context, setState) => AlertDialog(
+                  title: Text('Approve Application'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Select role for the new user:"),
+                      DropdownButton<UserRole>(
+                          value: selectedRole,
+                          items: UserRole.values.map((role) {
+                            return DropdownMenuItem(
+                              value: role,
+                              child: Text(role.toString().split('.').last),
+                            );
+                          }).toList(),
+                          onChanged: (UserRole? newRole) {
+                            if (newRole != null) {
+                              setState(() {
+                                selectedRole = newRole;
+                              });
+                            }
+                          })
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancel')),
+                    TextButton(
+                        onPressed: () {
+                          final authProvider =
+                              Provider.of<AuthProvider>(context, listen: false);
+                          authProvider.approveApplication(index, selectedRole);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content:
+                                  Text('Application approved successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                        child: Text('Approve'))
+                  ],
+                )));
+  }
+
+  void _showRejectionDialog(
+      BuildContext context, int index, UserApplication application) {
+    final TextEditingController reasonController = TextEditingController();
+
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
               title: Text('Reject Application'),
               content: TextField(
+                controller: reasonController,
                 decoration: InputDecoration(
                   labelText: "Rejection Reason",
                   hintText: "Enter reason for rejection",
@@ -164,7 +199,26 @@ class PendingApplicationsTab extends StatelessWidget {
                       backgroundColor: Colors.red,
                     ),
                     onPressed: () {
+                      if (reasonController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Please enter a rejection reason'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      final authProvider =
+                          Provider.of<AuthProvider>(context, listen: false);
+                      authProvider.rejectApplication(
+                          index, reasonController.text.trim());
                       Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Application rejected'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     },
                     child: Text("Reject"))
               ],
@@ -263,6 +317,12 @@ class ActiveUsersTab extends StatelessWidget {
                           title: Text('View Activity'),
                         ),
                       ),
+                      PopupMenuItem(
+                          value: "delete",
+                          child: ListTile(
+                            leading: Icon(Icons.delete),
+                            title: Text('delete account'),
+                          ))
                     ],
                     onSelected: (value) async {
                       switch (value) {
@@ -272,6 +332,8 @@ class ActiveUsersTab extends StatelessWidget {
                         case 'activity':
                           _showUserActivityDialog(
                               context, username, activities);
+                        case 'delete':
+                          _showDeleteAccountDialog(context, index);
                           break;
                       }
                     },
@@ -358,6 +420,25 @@ class ActiveUsersTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, int index) {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text("Delete Account"),
+              content: Text("Are you sure you want to delete your account?"),
+              actions: [
+                TextButton(
+                    onPressed: () async {
+                      //   await _deleteAccount(index);
+                      Navigator.pop(context);
+                    },
+                    child: Text("Yes")),
+                TextButton(
+                    onPressed: () => Navigator.pop(context), child: Text("No")),
+              ],
+            ));
   }
 }
 

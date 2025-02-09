@@ -22,6 +22,12 @@ class AuthProvider with ChangeNotifier {
     _loadSavedActivities();
     _loadSavedApplications();
     _loadUsers();
+    loadPendingApplications();
+  }
+
+  Future<void> loadPendingApplications() async {
+    _pendingApplications = await UserApplication.loadApplications();
+    notifyListeners();
   }
 
   Future<void> _loadUsers() async {
@@ -223,9 +229,66 @@ class AuthProvider with ChangeNotifier {
     await User.saveUsers(_users);
     notifyListeners();
   }
+
   void addUserActivity(UserActivity activity) async {
-  userActivities.add(activity);
-  await UserActivity.saveActivities(userActivities);
-  notifyListeners();
-}
+    userActivities.add(activity);
+    await UserActivity.saveActivities(userActivities);
+    notifyListeners();
+  }
+
+  Future<void> addPendingApplication(UserApplication application) async {
+    // Load existing applications
+    final applications = await UserApplication.loadApplications();
+
+    // Add new application
+    _pendingApplications.add(application);
+
+    // Save updated applications
+    await UserApplication.saveApplications(_pendingApplications);
+
+    // Update the pending applications list
+    _pendingApplications = applications;
+
+    // Maintain applications (trim if exceeds max)
+    await UserApplication.maintainApplications(_pendingApplications);
+
+    notifyListeners();
+  }
+
+  Future<void> approveApplication(int index, UserRole role) async {
+    final application = _pendingApplications[index];
+
+    // Create new user from application
+    final user = User.fromApplication(application, role);
+
+    // Save the new user
+    await saveNewUser(user);
+    final activity = UserActivity(
+        username: application.username,
+        actionType: "Account Approved",
+        timestamp: DateTime.now().toIso8601String());
+    userActivities.add(activity);
+    await UserActivity.saveActivities(userActivities);
+
+    // Remove from pending applications
+    _pendingApplications.removeAt(index);
+    await UserApplication.saveApplications(_pendingApplications);
+
+    notifyListeners();
+  }
+
+  Future<void> rejectApplication(int index, String reason) async {
+    // Remove from pending applications
+    final application = _pendingApplications[index];
+    final activity = UserActivity(
+        username: application.username,
+        actionType: "Application Rejected: $reason",
+        timestamp: DateTime.now().toIso8601String());
+        userActivities.add(activity);
+        await UserActivity.saveActivities(userActivities);
+    _pendingApplications.removeAt(index);
+    await UserApplication.saveApplications(_pendingApplications);
+
+    notifyListeners();
+  }
 }

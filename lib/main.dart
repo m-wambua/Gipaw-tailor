@@ -16,6 +16,7 @@ void main() async {
   // Check if it's the first run
   final prefs = await SharedPreferences.getInstance();
   final isFirstRun = prefs.getBool(IS_FIRST_RUN_KEY) ?? true;
+  AuthProvider();
 
   runApp(MyApp(isFirstRun: isFirstRun));
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:html/parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class User {
@@ -12,16 +13,15 @@ class User {
   final bool? isDisabled;
   final bool? isActive;
 
-  User({
-    required this.id,
-    this.username,
-    this.email,
-    this.phoneNumber,
-    required this.password,
-    required this.role,
-    this.isDisabled = false,
-    this.isActive=true
-  });
+  User(
+      {required this.id,
+      this.username,
+      this.email,
+      this.phoneNumber,
+      required this.password,
+      required this.role,
+      this.isDisabled = false,
+      this.isActive = true});
 
   // Convert User object to JSON string
   String toJson() {
@@ -61,9 +61,11 @@ class User {
       id: application.id,
       username: application.username,
       email: application.email,
-      password: '',
+      phoneNumber: application.phoneNumber,
+      password: application.password, // Now using the password from application
       role: role,
       isDisabled: false,
+      isActive: true,
     );
   }
 
@@ -125,12 +127,20 @@ class UserApplication {
   final String id;
   final String username;
   final String email;
+  final String firstName;
+  final String lastName;
+  final String phoneNumber;
+  final String password;
   final DateTime applicationDate;
 
   UserApplication({
     required this.id,
     required this.username,
     required this.email,
+    required this.firstName,
+    required this.lastName,
+    required this.phoneNumber,
+    required this.password,
     required this.applicationDate,
   });
 
@@ -138,13 +148,21 @@ class UserApplication {
         'id': id,
         'username': username,
         'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+        'phoneNumber': phoneNumber,
+        'password': password,
         'applicationDate': applicationDate.toIso8601String()
       };
   factory UserApplication.fromJson(Map<String, dynamic> json) =>
       UserApplication(
           username: json['username'],
-          applicationDate: json['applicationDate'],
+          applicationDate: DateTime.parse(json['applicationDate']),
           email: json['email'],
+          firstName: json['firstName'],
+          lastName: json['lastName'],
+          phoneNumber: json['phoneNumber'],
+          password: json['password'],
           id: json['id']);
 
   static Future<void> saveApplications(

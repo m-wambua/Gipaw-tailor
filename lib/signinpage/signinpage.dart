@@ -147,7 +147,16 @@ class _SignUpPageState extends State<SignInPage> {
                           }
                         }
                       },
-                      child: Text("Sign in"))
+                      child: Text("Sign in")),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const SignUpPage()));
+                      },
+                      child: const Text("Don't have an account? Sign up")),
                 ],
               ),
             )));
