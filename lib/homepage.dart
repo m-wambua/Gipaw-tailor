@@ -9,6 +9,7 @@ import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
+import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
 import 'package:gipaw_tailor/signinpage/signuppage.dart';
@@ -1025,7 +1026,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => AdminDashBoard())))
+                              builder: (context) => AdminDashBoard()))),
+                  LogoutButton()
                   /*                
                   TextButton(
                     onPressed: () {

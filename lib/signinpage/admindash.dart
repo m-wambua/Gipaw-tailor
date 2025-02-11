@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -443,10 +444,59 @@ class ActiveUsersTab extends StatelessWidget {
 }
 
 class UserActivityTab extends StatelessWidget {
+  // Helper method to format timestamp
+  String _formatTimestamp(String timestamp) {
+    final DateTime dateTime = DateTime.parse(timestamp);
+    return DateFormat('MMM d, y h:mm a').format(dateTime);
+  }
+
+  // Helper method to get appropriate icon for action type
+  IconData _getActionIcon(String actionType) {
+    if (actionType.toLowerCase().contains('login')) {
+      return Icons.login;
+    } else if (actionType.toLowerCase().contains('logout')) {
+      return Icons.logout;
+    } else if (actionType.toLowerCase().contains('approved')) {
+      return Icons.check_circle;
+    } else if (actionType.toLowerCase().contains('rejected')) {
+      return Icons.cancel;
+    } else if (actionType.toLowerCase().contains('disabled')) {
+      return Icons.block;
+    } else if (actionType.toLowerCase().contains('deleted')) {
+      return Icons.delete;
+    } else if (actionType.toLowerCase().contains('role')) {
+      return Icons.assignment_ind;
+    } else {
+      return Icons.info;
+    }
+  }
+
+  // Helper method to get color for action type
+  Color _getActionColor(String actionType) {
+    if (actionType.toLowerCase().contains('login')) {
+      return Colors.green;
+    } else if (actionType.toLowerCase().contains('logout')) {
+      return Colors.blue;
+    } else if (actionType.toLowerCase().contains('approved')) {
+      return Colors.green;
+    } else if (actionType.toLowerCase().contains('rejected')) {
+      return Colors.red;
+    } else if (actionType.toLowerCase().contains('disabled')) {
+      return Colors.orange;
+    } else if (actionType.toLowerCase().contains('deleted')) {
+      return Colors.red;
+    } else if (actionType.toLowerCase().contains('role')) {
+      return Colors.purple;
+    } else {
+      return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final activities = authProvider.userActivities;
+
     return Column(
       children: [
         Padding(
@@ -487,27 +537,65 @@ class UserActivityTab extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: activities.length, // Replace with actual activity count
-            itemBuilder: (context, index) {
-              final activity = activities[index];
-              return Card(
-                margin: EdgeInsets.all(8),
-                child: ListTile(
-                  leading: Icon(Icons.access_time),
-                  title: Text('User Action ${index + 1}'),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          child: activities.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('User: ${activity.username}'),
-                      Text('Action: ${index % 2 == 0 ? "Login" : "Logout"}'),
-                      Text('Time: ${activity.timestamp}'),
+                      Icon(Icons.history, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No activity records found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
+                )
+              : ListView.builder(
+                  itemCount: activities.length,
+                  itemBuilder: (context, index) {
+                    final activity = activities[index];
+                    return Card(
+                      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: _getActionColor(activity.actionType)
+                              .withOpacity(0.1),
+                          child: Icon(
+                            _getActionIcon(activity.actionType),
+                            color: _getActionColor(activity.actionType),
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                activity.username,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Text(
+                              _formatTimestamp(activity.timestamp),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            activity.actionType,
+                            style: TextStyle(
+                              color: _getActionColor(activity.actionType),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
