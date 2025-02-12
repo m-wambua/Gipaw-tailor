@@ -21,7 +21,7 @@ class _AdminDashBoardState extends State<AdminDashBoard>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -47,6 +47,9 @@ class _AdminDashBoardState extends State<AdminDashBoard>
               ),
               Tab(
                 text: "User Activity",
+              ),
+              Tab(
+                text: "Users",
               )
             ]),
           ),
@@ -55,7 +58,8 @@ class _AdminDashBoardState extends State<AdminDashBoard>
             children: [
               PendingApplicationsTab(),
               ActiveUsersTab(),
-              UserActivityTab()
+              UserActivityTab(),
+              const UserTab()
             ],
           ),
         ));
@@ -645,5 +649,47 @@ class UserActivity {
           activities.sublist(activities.length - maxEntries);
       await saveActivities(trimmedActivites);
     }
+  }
+}
+
+class UserTab extends StatelessWidget {
+  const UserTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      // Use Consumer to access AuthProvider
+      builder: (context, authProvider, child) {
+        final users = authProvider.users; // Access the list of users
+
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            final user = users[index];
+            return Card(
+              // Use Card for a visually appealing list
+              child: ListTile(
+                leading: const Icon(Icons.person), // Add an icon
+                title: Text(user.username ?? "N/A"), // Display username
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Email: ${user.email ?? "N/A"}"),
+                    Text("Phone: ${user.phoneNumber ?? "N/A"}"),
+                    Text(
+                        "Role: ${user.role.toString().split('.').last}"), //Nicely formatted role
+                    Text(
+                        "Status: ${user.status.toString().split('.').last}"), //Nicely formatted status
+                    Text("Is Disabled: ${user.isDisabled}"),
+                    Text("Is Active: ${user.isActive}"),
+                  ],
+                ),
+                // Add more details as needed
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

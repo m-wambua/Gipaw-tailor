@@ -167,7 +167,7 @@ class AuthProvider with ChangeNotifier {
       //  final usersJson = prefs.getStringList('users') ?? [];
       //  final users = usersJson.map((json) => User.fromJson(json)).toList();
 
-      final matchingUser = users.firstWhere(
+      final matchingUser = _users.firstWhere(
         (user) {
           switch (method) {
             case SignInMethod.username:
@@ -186,7 +186,7 @@ class AuthProvider with ChangeNotifier {
             email: '',
             phoneNumber: ''),
       );
-      if (matchingUser != null) {
+      if (matchingUser.id.isNotEmpty) {
         if (matchingUser.password == password) {
           _currentUser = matchingUser;
           logUserActivity(identifier, 'Login');
@@ -361,12 +361,12 @@ class AuthProvider with ChangeNotifier {
     final application = _pendingApplications[index];
 
     // Create new user from application
-    final user = User.fromApplication(application, role);
-    _users.add(user);
-    await _saveUsers();
+    final newUser = User.fromApplication(application, role);
 
-    // Save the new user
-    // await saveNewUser(user);
+    _users.add(newUser); // Add to the in-memory list
+
+    await _saveUsers(); // Persist the updated user list
+
     final activity = UserActivity(
         username: application.username,
         actionType: "Account Approved",
@@ -374,12 +374,9 @@ class AuthProvider with ChangeNotifier {
     userActivities.add(activity);
     _userActivities.add(activity);
     await _saveActivities();
-    //await UserActivity.saveActivities(userActivities);
 
-    // Remove from pending applications
     _pendingApplications.removeAt(index);
     await _saveApplications();
-    // await UserApplication.saveApplications(_pendingApplications);
 
     notifyListeners();
   }
@@ -465,4 +462,3 @@ class LogoutButton extends StatelessWidget {
         icon: Icon(Icons.logout));
   }
 }
-

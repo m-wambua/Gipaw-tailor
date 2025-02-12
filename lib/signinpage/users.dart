@@ -8,20 +8,25 @@ class User {
   final String? username;
   final String? email;
   final String? phoneNumber;
-  final String password; // In real app, store hashed password
-  final UserRole role;
+  final String? password; // In real app, store hashed password
+  final UserRole? role;
   final bool? isDisabled;
   final bool? isActive;
+  final UserStatus status;
 
   User(
       {required this.id,
       this.username,
       this.email,
       this.phoneNumber,
-      required this.password,
-      required this.role,
+      this.password,
+      this.role,
       this.isDisabled = false,
-      this.isActive = true});
+      this.isActive = true,
+      this.status=UserStatus.pending
+      }
+      
+      );
 
   // Convert User object to JSON string
   String toJson() {
@@ -33,6 +38,7 @@ class User {
       'password': password, // In real app, this should be hashed
       'role': role.toString(),
       'isDisabled': isDisabled,
+      'status':status.toString()
     });
   }
 
@@ -44,6 +50,7 @@ class User {
     String? password,
     UserRole? role,
     bool? isDisabled,
+    UserStatus? status,
   }) {
     return User(
       id: id ?? this.id,
@@ -53,6 +60,7 @@ class User {
       password: password ?? this.password,
       role: role ?? this.role,
       isDisabled: isDisabled ?? this.isDisabled,
+      status: status ?? this.status,
     );
   }
 
@@ -66,6 +74,7 @@ class User {
       role: role,
       isDisabled: false,
       isActive: true,
+      status: UserStatus.pending
     );
   }
 
@@ -82,6 +91,10 @@ class User {
         orElse: () => UserRole.user,
       ),
       isDisabled: json['isDisabled'] ?? false,
+      status: UserStatus.values.firstWhere(
+        (e) => e.toString() == json['status'],
+        orElse: () => UserStatus.pending,
+        ),
     );
   }
 
@@ -116,6 +129,8 @@ enum UserRole {
   user,
   manager,
 }
+
+enum UserStatus { pending, approved, rejected }
 
 enum SignInMethod {
   username,
