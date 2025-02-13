@@ -12,29 +12,47 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _currentUser;
-  User? get currentUser => _currentUser;
   List<UserActivity> _userActivities = [];
-  List<UserActivity> get userActivities => _userActivities;
   List<User> _users = [];
-  List<User> get users => _users;
   List<UserApplication> _pendingApplications = [];
+  List<UserApplication> _acceptedApplications = [];
+  List<UserApplication> _rejectedApplications = [];
+
+  // Getters
+  User? get currentUser => _currentUser;
+  List<UserActivity> get userActivities => _userActivities;
+  List<User> get users => _users;
   List<UserApplication> get pendingApplications => _pendingApplications;
-  List<UserApplication> _applications = [];
   List<User> get activeUsers =>
       _users.where((user) => user.isActive ?? false).toList();
 
   // Return the list of active users
   AuthProvider() {
-    _loadSavedActivities();
-    _loadUserActivities();
-    _loadSavedApplications();
-    _loadUsers();
-    loadPendingApplications();
+    _initializeData();
   }
 
-  Future<String> get _applicationsFilePath async {
+  Future<void> _initializeData() async {
+    await Future.wait([
+      _loadUsers(),
+      _loadUserActivities(),
+      _loadApplications(),
+    ]);
+  }
+
+  // File paths
+  Future<String> get _pendingApplicationsPath async {
     final directory = await getApplicationDocumentsDirectory();
     return '${directory.path}/pending_applications.json';
+  }
+
+  Future<String> get _acceptedApplicationsPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/accepted_applications.json';
+  }
+
+  Future<String> get _rejectedApplicationsPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/rejected_applications.json';
   }
 
   Future<String> get _usersFilePath async {
@@ -47,21 +65,64 @@ class AuthProvider with ChangeNotifier {
     return '${directory.path}/user_activities.json';
   }
 
-  Future<void> loadPendingApplications() async {
+  // Load applications
+  Future<void> _loadApplications() async {
     try {
-      final file = File(await _applicationsFilePath);
-      if (await file.exists()) {
-        final jsonString = await file.readAsString();
+      // Load pending applications
+      final pendingFile = File(await _pendingApplicationsPath);
+      if (await pendingFile.exists()) {
+        final jsonString = await pendingFile.readAsString();
         final List<dynamic> jsonList = json.decode(jsonString);
         _pendingApplications =
             jsonList.map((json) => UserApplication.fromJson(json)).toList();
-      } else {
-        _pendingApplications = [];
       }
-      notifyListeners();
+
+      // Load accepted applications
+      final acceptedFile = File(await _acceptedApplicationsPath);
+      if (await acceptedFile.exists()) {
+        final jsonString = await acceptedFile.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        _acceptedApplications =
+            jsonList.map((json) => UserApplication.fromJson(json)).toList();
+      }
+
+      // Load rejected applications
+      final rejectedFile = File(await _rejectedApplicationsPath);
+      if (await rejectedFile.exists()) {
+        final jsonString = await rejectedFile.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        _rejectedApplications =
+            jsonList.map((json) => UserApplication.fromJson(json)).toList();
+      }
     } catch (e) {
-      print("Error loading pending applications: $e");
+      print("Error loading applications: $e");
+      // Initialize empty lists if loading fails
       _pendingApplications = [];
+      _acceptedApplications = [];
+      _rejectedApplications = [];
+    }
+    notifyListeners();
+  }
+
+  // Save applications
+  Future<void> _saveApplications() async {
+    try {
+      // Save pending applications
+      final pendingFile = File(await _pendingApplicationsPath);
+      await pendingFile.writeAsString(json
+          .encode(_pendingApplications.map((app) => app.toJson()).toList()));
+
+      // Save accepted applications
+      final acceptedFile = File(await _acceptedApplicationsPath);
+      await acceptedFile.writeAsString(json
+          .encode(_acceptedApplications.map((app) => app.toJson()).toList()));
+
+      // Save rejected applications
+      final rejectedFile = File(await _rejectedApplicationsPath);
+      await rejectedFile.writeAsString(json
+          .encode(_rejectedApplications.map((app) => app.toJson()).toList()));
+    } catch (e) {
+      print("Error saving applications: $e");
     }
   }
 
@@ -88,7 +149,12 @@ class AuthProvider with ChangeNotifier {
       if (await file.exists()) {
         final jsonString = await file.readAsString();
         final List<dynamic> jsonList = json.decode(jsonString);
-        _users = jsonList.map((json) => User.fromJson(json)).toList();
+
+        // Ensure each item in the list is a Map<String, dynamic>
+        _users = jsonList
+            .where((item) => item is Map<String, dynamic>)
+            .map((json) => User.fromJson(json as Map<String, dynamic>))
+            .toList();
       } else {
         _users = [];
       }
@@ -96,18 +162,7 @@ class AuthProvider with ChangeNotifier {
       print("Error loading users: $e");
       _users = [];
     }
-
     notifyListeners();
-  }
-
-  Future<void> _saveApplications() async {
-    try {
-      final file = File(await _applicationsFilePath);
-      final jsonList = _pendingApplications.map((app) => app.toJson()).toList();
-      await file.writeAsString(json.encode(jsonList));
-    } catch (e) {
-      print("Error Saving applications: $e");
-    }
   }
 
   Future<void> _saveUsers() async {
@@ -129,16 +184,6 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       print("Error saving activities: $e");
     }
-  }
-
-  Future<void> _loadSavedApplications() async {
-    _applications = await UserApplication.loadApplications();
-    notifyListeners();
-  }
-
-  Future<void> _loadSavedActivities() async {
-    _userActivities = await UserActivity.loadActivities();
-    notifyListeners();
   }
 
   Future<bool> signIn(
@@ -243,23 +288,22 @@ class AuthProvider with ChangeNotifier {
     return allowedRoles.contains(_currentUser!.role);
   }
 
-  void updateUserRole(User user, UserRole newRole) async {
-    final index = _users.indexWhere((u) => u.id == user.id);
-    if (index != -1) {
-      _users[index] = User(
-          id: _users[index].id,
-          password: _users[index].password,
-          role: newRole,
-          isDisabled: _users[index].isDisabled,
-          email: _users[index].email,
-          phoneNumber: _users[index].phoneNumber,
-          username: _users[index].username);
-      await User.saveUsers(_users);
+  Future<void> updateUserRole(User user, UserRole newRole) async {
+    try {
+      final updatedUser = user.copyWith(
+        role: newRole,
+      );
 
-      user.copyWith(role: newRole);
-      logUserActivity(
-          user.username ?? 'Unknown', 'Role Changed to ${newRole.toString()}');
+      final index = _users.indexWhere((u) => u.id == user.id);
+      if (index != -1) {
+        _users[index] = updatedUser;
+        await _saveUsers();
+        logUserActivity(user.username ?? 'Unknown',
+            'Role Updated to ${newRole.toString().split('.').last}');
+      }
       notifyListeners();
+    } catch (e) {
+      print("Error updating user role: $e");
     }
   }
 
@@ -311,20 +355,60 @@ class AuthProvider with ChangeNotifier {
     return username == storedUsername && password == storedPassword;
   }
 
-  void disableUser(User user) {
-    final index = _users.indexWhere((u) => u.id == user.id);
-    if (index != 1) {
-      _users[index] = user.copyWith(isDisabled: true);
-      logUserActivity(user.username ?? 'Unknown', "Account Diasbled");
+  Future<void> disableUser(User user) async {
+    try {
+      final updatedUser = user.copyWith(
+        status: UserStatus.disabled,
+        isDisabled: true,
+      );
+
+      final index = _users.indexWhere((u) => u.id == user.id);
+      if (index != -1) {
+        _users[index] = updatedUser;
+        await _saveUsers();
+        logUserActivity(user.username ?? 'Unknown', 'User Disabled');
+      }
       notifyListeners();
+    } catch (e) {
+      print("Error disabling user: $e");
     }
   }
 
-  void deleteUser(User user) async {
-    _users.removeWhere((u) => u.id == user.id);
-    logUserActivity(user.username ?? 'Unknown', 'Account Deleted');
-    await User.saveUsers(_users);
-    notifyListeners();
+  Future<void> deleteUser(User user) async {
+    try {
+      final updatedUser = user.copyWith(
+        status: UserStatus.deleted,
+      );
+
+      final index = _users.indexWhere((u) => u.id == user.id);
+      if (index != -1) {
+        _users[index] = updatedUser;
+        await _saveUsers();
+        logUserActivity(user.username ?? 'Unknown', 'User Deleted');
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error deleting user: $e");
+    }
+  }
+
+  Future<void> enableUser(User user) async {
+    try {
+      final updatedUser = user.copyWith(
+        status: UserStatus.approved,
+        isDisabled: false,
+      );
+
+      final index = _users.indexWhere((u) => u.id == user.id);
+      if (index != -1) {
+        _users[index] = updatedUser;
+        await _saveUsers();
+        logUserActivity(user.username ?? 'Unknown', 'User Enabled');
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error enabling user: $e");
+    }
   }
 
   void addUserActivity(UserActivity activity) async {
@@ -334,68 +418,86 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> addPendingApplication(UserApplication application) async {
-    // Load existing applications
-    // final applications = await UserApplication.loadApplications();
-
-    // Add new application
     _pendingApplications.add(application);
     await _saveApplications();
+
+    // Maintain maximum of 500 pending applications
     if (_pendingApplications.length > 500) {
       _pendingApplications =
           _pendingApplications.sublist(_pendingApplications.length - 500);
       await _saveApplications();
     }
-    // Save updated applications
-    // await UserApplication.saveApplications(_pendingApplications);
-
-    // Update the pending applications list
-    // _pendingApplications = applications;
-
-    // Maintain applications (trim if exceeds max)
-    // await UserApplication.maintainApplications(_pendingApplications);
 
     notifyListeners();
   }
 
+  // Approve application
   Future<void> approveApplication(int index, UserRole role) async {
     final application = _pendingApplications[index];
 
     // Create new user from application
     final newUser = User.fromApplication(application, role);
+    _users.add(newUser);
+    await _saveUsers();
 
-    _users.add(newUser); // Add to the in-memory list
+    // Move application to accepted list
+    _acceptedApplications.add(application);
+    _pendingApplications.removeAt(index);
+    await _saveApplications();
 
-    await _saveUsers(); // Persist the updated user list
-
+    // Log activity
     final activity = UserActivity(
         username: application.username,
         actionType: "Account Approved",
         timestamp: DateTime.now().toIso8601String());
-    userActivities.add(activity);
     _userActivities.add(activity);
     await _saveActivities();
-
-    _pendingApplications.removeAt(index);
-    await _saveApplications();
 
     notifyListeners();
   }
 
+  // Reject application
   Future<void> rejectApplication(int index, String reason) async {
-    // Remove from pending applications
     final application = _pendingApplications[index];
+
+    // Move application to rejected list with reason
+    _rejectedApplications.add(application);
+    _pendingApplications.removeAt(index);
+    await _saveApplications();
+
+    // Log activity
     final activity = UserActivity(
         username: application.username,
         actionType: "Application Rejected: $reason",
         timestamp: DateTime.now().toIso8601String());
-    userActivities.add(activity);
+    _userActivities.add(activity);
     await _saveActivities();
-    // await UserActivity.saveActivities(userActivities);
-    _pendingApplications.removeAt(index);
-    // await UserApplication.saveApplications(_pendingApplications);
-    await _saveApplications();
 
     notifyListeners();
+  }
+
+  Future<void> debugPrintStoredData() async {
+    try {
+      final usersFile = File(await _usersFilePath);
+      if (await usersFile.exists()) {
+        print('Stored users:');
+        print(await usersFile.readAsString());
+      }
+
+      final pendingFile = File(await _pendingApplicationsPath);
+      if (await pendingFile.exists()) {
+        print('Pending applications:');
+        print(await pendingFile.readAsString());
+      }
+
+      final acceptedFile = File(await _acceptedApplicationsPath);
+      if (await acceptedFile.exists()) {
+        print('Accepted applications:');
+        print(await acceptedFile.readAsString());
+      }
+    } catch (e) {
+      print("Error reading debug data: $e");
+    }
   }
 }
 

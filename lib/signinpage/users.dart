@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:html/parser.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class User {
@@ -8,38 +10,38 @@ class User {
   final String? username;
   final String? email;
   final String? phoneNumber;
-  final String? password; // In real app, store hashed password
+  final String? password;
   final UserRole? role;
   final bool? isDisabled;
   final bool? isActive;
   final UserStatus status;
 
-  User(
-      {required this.id,
-      this.username,
-      this.email,
-      this.phoneNumber,
-      this.password,
-      this.role,
-      this.isDisabled = false,
-      this.isActive = true,
-      this.status=UserStatus.pending
-      }
-      
-      );
+  User({
+    required this.id,
+    this.username,
+    this.email,
+    this.phoneNumber,
+    this.password,
+    this.role,
+    this.isDisabled = false,
+    this.isActive = true,
+    this.status = UserStatus.pending
+  });
 
   // Convert User object to JSON string
-  String toJson() {
-    return json.encode({
+ 
+  Map<String, dynamic> toJson() {
+    return {
       'id': id,
       'username': username,
       'email': email,
       'phoneNumber': phoneNumber,
-      'password': password, // In real app, this should be hashed
-      'role': role.toString(),
+      'role': role?.toString(), // Convert enum to string
+      'password': password,
       'isDisabled': isDisabled,
-      'status':status.toString()
-    });
+      'isActive': isActive,
+      'status': status.toString(), // Add status to JSON
+    };
   }
 
   User copyWith({
@@ -66,63 +68,89 @@ class User {
 
   factory User.fromApplication(UserApplication application, UserRole role) {
     return User(
-      id: application.id,
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Generate unique ID
       username: application.username,
       email: application.email,
       phoneNumber: application.phoneNumber,
-      password: application.password, // Now using the password from application
       role: role,
+      password: application.password,
       isDisabled: false,
       isActive: true,
-      status: UserStatus.pending
     );
   }
-
-  // Create User object from JSON string
-  factory User.fromJson(Map<String, dynamic> json) {
+   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       username: json['username'],
       email: json['email'],
       phoneNumber: json['phoneNumber'],
       password: json['password'],
-      role: UserRole.values.firstWhere(
-        (e) => e.toString() == json['role'],
-        orElse: () => UserRole.user,
-      ),
+      role: _parseUserRole(json['role'] ?? 'UserRole.user'),
       isDisabled: json['isDisabled'] ?? false,
-      status: UserStatus.values.firstWhere(
-        (e) => e.toString() == json['status'],
-        orElse: () => UserStatus.pending,
-        ),
+      isActive: json['isActive'] ?? true,
+      status: _parseUserStatus(json['status'] ?? 'UserStatus.pending'),
     );
   }
 
+  static UserRole _parseUserRole(String role) {
+    switch (role) {
+      case 'UserRole.admin':
+        return UserRole.admin;
+      case 'UserRole.manager':
+        return UserRole.manager;
+      case 'UserRole.user':
+        return UserRole.user;
+      default:
+        return UserRole.user;
+    }
+  }
+
+  static UserStatus _parseUserStatus(String status) {
+    switch (status) {
+      case 'UserStatus.approved':
+        return UserStatus.approved;
+      case 'UserStatus.rejected':
+        return UserStatus.rejected;
+      case 'UserStatus.pending':
+        return UserStatus.pending;
+      default:
+        return UserStatus.pending;
+    }
+  }
+  static Future<String> get _usersFilePath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/users.json';
+  }
+
   static Future<void> saveUsers(List<User> users) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonUsers = users.map((user) => user.toJson()).toList();
-    await prefs.setStringList(
-        "active_users", jsonUsers.map((user) => json.encode(user)).toList());
+    try {
+      final file = File(await _usersFilePath);
+      final jsonUsers = users.map((user) => user.toJson()).toList();
+      await file.writeAsString(json.encode(jsonUsers));
+    } catch (e) {
+      print("Error saving users: $e");
+    }
   }
 
   static Future<List<User>> loadUsers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonUsers = prefs.getStringList("active_users") ?? [];
-
-    return jsonUsers.map((jsonString) {
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      return User.fromJson(jsonMap);
-    }).toList();
+    try {
+      final file = File(await _usersFilePath);
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        return jsonList
+            .map((json) => User.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      print("Error loading users: $e");
+    }
+    return [];
   }
 }
 
 // Helper function to save a new user
-Future<void> saveNewUser(User user) async {
-  final prefs = await SharedPreferences.getInstance();
-  final users = prefs.getStringList('users') ?? [];
-  users.add(user.toJson());
-  await prefs.setStringList('users', users);
-}
+
 
 enum UserRole {
   admin,
@@ -130,7 +158,7 @@ enum UserRole {
   manager,
 }
 
-enum UserStatus { pending, approved, rejected }
+enum UserStatus { pending, approved, rejected, deleted,disabled }
 
 enum SignInMethod {
   username,
@@ -179,35 +207,42 @@ class UserApplication {
           phoneNumber: json['phoneNumber'],
           password: json['password'],
           id: json['id']);
+static Future<String> get _applicationsFilePath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/applications.json';
+  }
 
-  static Future<void> saveApplications(
-      List<UserApplication> applications) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonApplications =
-        applications.map((application) => application.toJson()).toList();
-    await prefs.setStringList(
-        'user_application',
-        jsonApplications
-            .map((application) => json.encode(application))
-            .toList());
+  static Future<void> saveApplications(List<UserApplication> applications) async {
+    try {
+      final file = File(await _applicationsFilePath);
+      final jsonApplications = applications.map((app) => app.toJson()).toList();
+      await file.writeAsString(json.encode(jsonApplications));
+    } catch (e) {
+      print("Error saving applications: $e");
+    }
   }
 
   static Future<List<UserApplication>> loadApplications() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonApplications = prefs.getStringList('user_application') ?? [];
-
-    return jsonApplications.map((jsonString) {
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      return UserApplication.fromJson(jsonMap);
-    }).toList();
+    try {
+      final file = File(await _applicationsFilePath);
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        final List<dynamic> jsonList = json.decode(jsonString);
+        return jsonList
+            .map((json) => UserApplication.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      print("Error loading applications: $e");
+    }
+    return [];
   }
 
   static Future<void> maintainApplications(List<UserApplication> applications,
-      {int maxEntires = 500}) async {
-    if (applications.length > maxEntires) {
-      final trimmedApplications =
-          applications.sublist(applications.length - maxEntires);
-      await saveApplications(trimmedApplications);
+      {int maxEntries = 500}) async {
+    if (applications.length > maxEntries) {
+      applications = applications.sublist(applications.length - maxEntries);
+      await saveApplications(applications);
     }
   }
 }

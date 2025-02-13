@@ -260,6 +260,10 @@ class _SignUpPageState extends State<SignUpPage> {
                         child: TextButton(
                       onPressed: () {
                         Navigator.pop(context);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SignInPage()));
                       },
                       child: const Text(
                         'Close',

@@ -37,7 +37,18 @@ class _AdminDashBoardState extends State<AdminDashBoard>
         allowedRoles: [UserRole.admin],
         child: Scaffold(
           appBar: AppBar(
-            title: Text("Admin Dashboard"),
+            title: Row(
+              children: [
+                Text("Admin Dashboard"),
+                ElevatedButton(
+                  onPressed: () async {
+                    await Provider.of<AuthProvider>(context, listen: false)
+                        .debugPrintStoredData();
+                  },
+                  child: Text('Debug: Print Stored Data'),
+                )
+              ],
+            ),
             bottom: TabBar(controller: _tabController, tabs: [
               Tab(
                 text: "Pending Applications",
@@ -658,34 +669,276 @@ class UserTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
-      // Use Consumer to access AuthProvider
       builder: (context, authProvider, child) {
-        final users = authProvider.users; // Access the list of users
-
+        final users = authProvider.users;
         return ListView.builder(
           itemCount: users.length,
           itemBuilder: (context, index) {
             final user = users[index];
             return Card(
-              // Use Card for a visually appealing list
-              child: ListTile(
-                leading: const Icon(Icons.person), // Add an icon
-                title: Text(user.username ?? "N/A"), // Display username
-                subtitle: Column(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Email: ${user.email ?? "N/A"}"),
-                    Text("Phone: ${user.phoneNumber ?? "N/A"}"),
-                    Text(
-                        "Role: ${user.role.toString().split('.').last}"), //Nicely formatted role
-                    Text(
-                        "Status: ${user.status.toString().split('.').last}"), //Nicely formatted status
-                    Text("Is Disabled: ${user.isDisabled}"),
-                    Text("Is Active: ${user.isActive}"),
+                    ListTile(
+                      leading: Icon(
+                        Icons.person,
+                        color: _getUserIconColor(user.status),
+                      ),
+                      title: Text(
+                        user.username ?? "N/A",
+                        style: TextStyle(
+                          decoration: user.status == UserStatus.deleted || 
+                                     user.status == UserStatus.disabled 
+                              ? TextDecoration.lineThrough 
+                              : null,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Email: ${user.email ?? "N/A"}"),
+                          Text("Phone: ${user.phoneNumber ?? "N/A"}"),
+                          Text("Role: ${user.role.toString().split('.').last}"),
+                          Text("Status: ${user.status.toString().split('.').last}"),
+                        ],
+                      ),
+                      trailing: _buildPopupMenu(context, user, authProvider),
+                    ),
+                    if (user.status != UserStatus.deleted && user.status != UserStatus.disabled)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            _buildRoleUpdateButton(context, user, authProvider),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
-                // Add more details as needed
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPopupMenu(BuildContext context, User user, AuthProvider authProvider) {
+    return PopupMenuButton<String>(
+      onSelected: (String choice) async {
+        switch (choice) {
+          case 'delete':
+            _showDeleteConfirmation(context, user, authProvider);
+            break;
+          case 'disable':
+            _showDisableConfirmation(context, user, authProvider);
+            break;
+          case 'enable':
+            _showEnableConfirmation(context, user, authProvider);
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) {
+        final List<PopupMenuEntry<String>> items = [];
+        
+        if (user.status != UserStatus.deleted) {
+          items.add(
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete User'),
+              ),
+            ),
+          );
+        }
+
+        if (user.status != UserStatus.disabled) {
+          items.add(
+            PopupMenuItem<String>(
+              value: 'disable',
+              child: ListTile(
+                leading: const Icon(Icons.block, color: Colors.orange),
+                title: const Text('Disable User'),
+              ),
+            ),
+          );
+        } else {
+          items.add(
+            PopupMenuItem<String>(
+              value: 'enable',
+              child: ListTile(
+                leading: const Icon(Icons.check_circle, color: Colors.green),
+                title: const Text('Enable User'),
+              ),
+            ),
+          );
+        }
+
+        return items;
+      },
+    );
+  }
+
+  Widget _buildRoleUpdateButton(BuildContext context, User user, AuthProvider authProvider) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.edit),
+      label: const Text('Update Role'),
+      onPressed: () => _showRoleUpdateDialog(context, user, authProvider),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  Color _getUserIconColor(UserStatus status) {
+    switch (status) {
+      case UserStatus.deleted:
+        return Colors.red;
+      case UserStatus.disabled:
+        return Colors.orange;
+      case UserStatus.approved:
+        return Colors.green;
+      case UserStatus.pending:
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _showDeleteConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete User'),
+          content: Text('Are you sure you want to delete ${user.username}?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () {
+                authProvider.deleteUser(user);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User ${user.username} has been deleted')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDisableConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Disable User'),
+          content: Text('Are you sure you want to disable ${user.username}?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Disable'),
+              onPressed: () {
+                authProvider.disableUser(user);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User ${user.username} has been disabled')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEnableConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enable User'),
+          content: Text('Are you sure you want to enable ${user.username}?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Enable'),
+              onPressed: () {
+                authProvider.enableUser(user);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('User ${user.username} has been enabled')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRoleUpdateDialog(BuildContext context, User user, AuthProvider authProvider) {
+    UserRole selectedRole = user.role ?? UserRole.user;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Update User Role'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: UserRole.values.map((role) {
+                  return RadioListTile<UserRole>(
+                    title: Text(role.toString().split('.').last),
+                    value: role,
+                    groupValue: selectedRole,
+                    onChanged: (UserRole? value) {
+                      setState(() {
+                        selectedRole = value!;
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: const Text('Update'),
+                  onPressed: () {
+                    authProvider.updateUserRole(user, selectedRole);
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'User ${user.username}\'s role updated to ${selectedRole.toString().split('.').last}'
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             );
           },
         );
