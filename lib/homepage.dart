@@ -6,6 +6,7 @@ import 'package:gipaw_tailor/curtainsales/curtainorderform.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
+import 'package:gipaw_tailor/receipts/receipts.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
@@ -45,6 +46,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final _chargesController = TextEditingController();
   final _commentsController = TextEditingController();
   String stockPath = 'lib/uniforms/stock/stock.json';
+  final stockManager = StockManager('lib/uniforms/stock/stock.json');
+  List<Map<String, dynamic>> entries = [];
 
   final List<UserRole> allowedRoles = [];
 
@@ -1553,6 +1556,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final reminderManager = ReminderManager(
         reminderFilePath: 'lib/remindersystem/reminders.json',
         embroideryFilePath: 'lib/remindersystem/embroidery.json');
+
     // List to hold multiple entries
     List<Map<String, dynamic>> entries = [];
 
@@ -1561,168 +1565,6 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            void addNewEntry() {
-              setState(() {
-                entries.add({
-                  'selectedUniformItem': null,
-                  'selectedColor': null,
-                  'selectedSize': null,
-                  'selectedPrize': null,
-                  'availableColors': [],
-                  'availableSizes': [],
-                  'availablePrizes': [],
-                  'numberController': TextEditingController(),
-                  'priceController': TextEditingController(),
-                  'calculatedPrice': 0,
-                });
-              });
-            }
-
-            void removeEntry(int index) {
-              setState(() {
-                entries.removeAt(index);
-              });
-            }
-
-            void updateCalculatedPrice(int index) {
-              final entry = entries[index];
-              final selectedPrize =
-                  int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
-              final quantity =
-                  int.tryParse(entry['numberController'].text.trim()) ?? 0;
-              final calculatedPrice = selectedPrize * quantity;
-
-              setState(() {
-                entry['calculatedPrice'] = calculatedPrice;
-                entry['priceController'].text = calculatedPrice.toString();
-              });
-            }
-
-            int calculateTotalPrice() {
-              return entries.fold<int>(
-                0,
-                (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
-              );
-            }
-
-            Future<void> processSaleAndUpdateStock() async {
-              try {
-                bool success = await stockManager.processSale(entries);
-                if (success) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Row(
-                      children: [
-                        CircularProgressIndicator.adaptive(),
-                        SizedBox(
-                          width: 10,
-                        ),
-                        Text('Processing sale...'),
-                      ],
-                    ),
-                    duration: Duration(seconds: 1),
-                  ));
-
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Sale processed successfully'),
-                    backgroundColor: Colors.green,
-                  ));
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Error processing sale'),
-                  backgroundColor: Colors.red,
-                ));
-              }
-            }
-
-            Widget buildStockStatus(Map<String, dynamic> entry) {
-              if (entry['selectedUniformItem'] == null ||
-                  entry['selectedColor'] == null ||
-                  entry['selectedSize'] == null) {
-                return const SizedBox.shrink();
-              }
-
-              final stockStatus = stockManager.checkStockStatus(
-                  entry['selectedUniformItem'],
-                  entry['selectedColor'],
-                  entry['selectedSize']);
-
-              final currentStock = stockManager.getCurrentStock(
-                  entry['selectedUniformItem'],
-                  entry['selectedColor'],
-                  entry['selectedSize']);
-
-              switch (stockStatus) {
-                case StockStatus.outOfStock:
-                  return Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: const Text(
-                      'Out of Stock',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  );
-
-                case StockStatus.low:
-                  return Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Stock: $currentStock',
-                          style: const TextStyle(color: Colors.orange),
-                        ),
-                        const SizedBox(width: 12),
-                        TextButton.icon(
-                          icon:
-                              const Icon(Icons.warning_amber_rounded, size: 18),
-                          label: const Text('Request Item'),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.orange.shade50,
-                            foregroundColor: Colors.orange.shade900,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                          ),
-                          onPressed: () async {
-                            await reminderManager.addReminder(
-                              type: ReminderType.stockAlert,
-                              title:
-                                  'Low Stock Alert: ${entry['selectedUniformItem']}',
-                              description: 'Color: ${entry['selectedColor']}\n'
-                                  'Size: ${entry['selectedSize']}\n'
-                                  'Current Stock: $currentStock',
-                              dueDate: null,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Stock request reminder created'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-
-                case StockStatus.available:
-                  return Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Stock: $currentStock',
-                      style: const TextStyle(color: Colors.green),
-                    ),
-                  );
-              }
-            }
-
             return AlertDialog(
               title: const Text("Uniform Sales"),
               content: SizedBox(
@@ -1772,7 +1614,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                                 null;
                                             entries[index]['selectedPrize'] =
                                                 null;
-                                            updateCalculatedPrice(index);
+                                            _updateCalculatedPrice(
+                                                entries, index, setState);
                                           });
                                         },
                                         value: entries[index]
@@ -1832,7 +1675,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                             labelText: "Number"),
                                         keyboardType: TextInputType.number,
                                         onChanged: (value) {
-                                          updateCalculatedPrice(index);
+                                          _updateCalculatedPrice(
+                                              entries, index, setState);
                                         },
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
@@ -1862,7 +1706,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                           setState(() {
                                             entries[index]['selectedPrize'] =
                                                 newValue;
-                                            updateCalculatedPrice(index);
+                                            _updateCalculatedPrice(
+                                                entries, index, setState);
                                           });
                                         },
                                         value: entries[index]['selectedPrize'],
@@ -1882,7 +1727,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     IconButton(
                                       icon: const Icon(Icons.remove_circle,
                                           color: Colors.red),
-                                      onPressed: () => removeEntry(index),
+                                      onPressed: () => _removeEntry(
+                                          entries, index, setState),
                                     ),
                                   ],
                                 ),
@@ -1890,7 +1736,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               Padding(
                                   padding: const EdgeInsets.only(
                                       left: 8, bottom: 16),
-                                  child: buildStockStatus(entries[index]))
+                                  child: _buildStockStatus(
+                                      context,
+                                      entries[index],
+                                      stockManager,
+                                      reminderManager))
                             ],
                           );
                         },
@@ -1900,11 +1750,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     TextButton.icon(
                       icon: const Icon(Icons.add, color: Colors.green),
                       label: const Text("Add"),
-                      onPressed: addNewEntry,
+                      onPressed: () => _addNewEntry(entries, setState),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      "Total: ${calculateTotalPrice()}",
+                      "Total: ${_calculateTotalPrice(entries)}",
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1934,7 +1784,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
 
                     if (isValid) {
-                      await processSaleAndUpdateStock();
+                      await _processSaleAndUpdateStock(
+                          context, entries, stockManager);
                       final salesManager =
                           SalesManager('lib/uniforms/sales/sales.json');
                       await salesManager.processSale(entries);
@@ -1962,6 +1813,165 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       },
     );
+  }
+
+  Future<void> _processSaleAndUpdateStock(BuildContext context,
+      List<Map<String, dynamic>> entries, StockManager stockManager) async {
+    try {
+      bool success = await stockManager.processSale(entries);
+      if (success) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator.adaptive(),
+              SizedBox(width: 10),
+              Text('Processing sale...'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
+        ));
+
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sale processed successfully'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Error processing sale'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
+  void _addNewEntry(List<Map<String, dynamic>> entries, Function setState) {
+    setState(() {
+      entries.add({
+        'selectedUniformItem': null,
+        'selectedColor': null,
+        'selectedSize': null,
+        'selectedPrize': null,
+        'availableColors': [],
+        'availableSizes': [],
+        'availablePrizes': [],
+        'numberController': TextEditingController(),
+        'priceController': TextEditingController(),
+        'calculatedPrice': 0,
+      });
+    });
+  }
+
+  void _removeEntry(
+      List<Map<String, dynamic>> entries, int index, Function setState) {
+    setState(() {
+      entries.removeAt(index);
+    });
+  }
+
+  void _updateCalculatedPrice(
+      List<Map<String, dynamic>> entries, int index, Function setState) {
+    final entry = entries[index];
+    final selectedPrize = int.tryParse(entry['selectedPrize'] ?? '0') ?? 0;
+    final quantity = int.tryParse(entry['numberController'].text.trim()) ?? 0;
+    final calculatedPrice = selectedPrize * quantity;
+
+    setState(() {
+      entry['calculatedPrice'] = calculatedPrice;
+      entry['priceController'].text = calculatedPrice.toString();
+    });
+  }
+
+  int _calculateTotalPrice(List<Map<String, dynamic>> entries) {
+    return entries.fold<int>(
+      0,
+      (sum, entry) => sum + (entry['calculatedPrice'] as int? ?? 0),
+    );
+  }
+
+  Widget _buildStockStatus(BuildContext context, Map<String, dynamic> entry,
+      StockManager stockManager, ReminderManager reminderManager) {
+    if (entry['selectedUniformItem'] == null ||
+        entry['selectedColor'] == null ||
+        entry['selectedSize'] == null) {
+      return const SizedBox.shrink();
+    }
+
+    final stockStatus = stockManager.checkStockStatus(
+        entry['selectedUniformItem'],
+        entry['selectedColor'],
+        entry['selectedSize']);
+
+    final currentStock = stockManager.getCurrentStock(
+        entry['selectedUniformItem'],
+        entry['selectedColor'],
+        entry['selectedSize']);
+
+    switch (stockStatus) {
+      case StockStatus.outOfStock:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: const Text(
+            'Out of Stock',
+            style: TextStyle(color: Colors.red),
+          ),
+        );
+
+      case StockStatus.low:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              Text(
+                'Stock: $currentStock',
+                style: const TextStyle(color: Colors.orange),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                label: const Text('Request Item'),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.orange.shade50,
+                  foregroundColor: Colors.orange.shade900,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                onPressed: () async {
+                  await reminderManager.addReminder(
+                    type: ReminderType.stockAlert,
+                    title: 'Low Stock Alert: ${entry['selectedUniformItem']}',
+                    description: 'Color: ${entry['selectedColor']}\n'
+                        'Size: ${entry['selectedSize']}\n'
+                        'Current Stock: $currentStock',
+                    dueDate: null,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Stock request reminder created'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+
+      case StockStatus.available:
+        return Container(
+          margin: const EdgeInsets.only(top: 8),
+          child: Text(
+            'Stock: $currentStock',
+            style: const TextStyle(color: Colors.green),
+          ),
+        );
+    }
   }
 
   Future<void> _uniformSales2() async {

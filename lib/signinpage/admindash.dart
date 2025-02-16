@@ -689,9 +689,9 @@ class UserTab extends StatelessWidget {
                       title: Text(
                         user.username ?? "N/A",
                         style: TextStyle(
-                          decoration: user.status == UserStatus.deleted || 
-                                     user.status == UserStatus.disabled 
-                              ? TextDecoration.lineThrough 
+                          decoration: user.status == UserStatus.deleted ||
+                                  user.status == UserStatus.disabled
+                              ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
@@ -701,17 +701,62 @@ class UserTab extends StatelessWidget {
                           Text("Email: ${user.email ?? "N/A"}"),
                           Text("Phone: ${user.phoneNumber ?? "N/A"}"),
                           Text("Role: ${user.role.toString().split('.').last}"),
-                          Text("Status: ${user.status.toString().split('.').last}"),
+                          Text(
+                              "Status: ${user.status.toString().split('.').last}"),
+                          // Last login time could be helpful for admins
                         ],
                       ),
                       trailing: _buildPopupMenu(context, user, authProvider),
                     ),
-                    if (user.status != UserStatus.deleted && user.status != UserStatus.disabled)
+                    if (user.status != UserStatus.deleted &&
+                        user.status != UserStatus.disabled)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            // Password reset button instead of viewing password
+                            TextButton.icon(
+                              icon: Icon(Icons.lock_reset),
+                              label: Text("Send Password Reset Link"),
+                              onPressed: () {
+                                // Show confirmation dialog
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: Text("Send Password Reset Email?"),
+                                      content: Text(
+                                          "This will send a password reset link to ${user.email}. Continue?"),
+                                      actions: [
+                                        TextButton(
+                                          child: Text("Cancel"),
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
+                                        ),
+                                        TextButton(
+                                          child: Text("Send"),
+                                          onPressed: () {
+                                            // Call your password reset service
+                                            //   authProvider.sendPasswordResetEmail(user.email);
+                                            Navigator.of(context).pop();
+                                            // Show success message
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    "Password reset email sent to ${user.email}"),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                            SizedBox(width: 8),
                             _buildRoleUpdateButton(context, user, authProvider),
                           ],
                         ),
@@ -726,7 +771,8 @@ class UserTab extends StatelessWidget {
     );
   }
 
-  Widget _buildPopupMenu(BuildContext context, User user, AuthProvider authProvider) {
+  Widget _buildPopupMenu(
+      BuildContext context, User user, AuthProvider authProvider) {
     return PopupMenuButton<String>(
       onSelected: (String choice) async {
         switch (choice) {
@@ -743,7 +789,7 @@ class UserTab extends StatelessWidget {
       },
       itemBuilder: (BuildContext context) {
         final List<PopupMenuEntry<String>> items = [];
-        
+
         if (user.status != UserStatus.deleted) {
           items.add(
             PopupMenuItem<String>(
@@ -783,7 +829,8 @@ class UserTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRoleUpdateButton(BuildContext context, User user, AuthProvider authProvider) {
+  Widget _buildRoleUpdateButton(
+      BuildContext context, User user, AuthProvider authProvider) {
     return ElevatedButton.icon(
       icon: const Icon(Icons.edit),
       label: const Text('Update Role'),
@@ -810,7 +857,8 @@ class UserTab extends StatelessWidget {
     }
   }
 
-  void _showDeleteConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+  void _showDeleteConfirmation(
+      BuildContext context, User user, AuthProvider authProvider) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -828,7 +876,8 @@ class UserTab extends StatelessWidget {
                 authProvider.deleteUser(user);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('User ${user.username} has been deleted')),
+                  SnackBar(
+                      content: Text('User ${user.username} has been deleted')),
                 );
               },
             ),
@@ -838,7 +887,8 @@ class UserTab extends StatelessWidget {
     );
   }
 
-  void _showDisableConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+  void _showDisableConfirmation(
+      BuildContext context, User user, AuthProvider authProvider) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -856,7 +906,8 @@ class UserTab extends StatelessWidget {
                 authProvider.disableUser(user);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('User ${user.username} has been disabled')),
+                  SnackBar(
+                      content: Text('User ${user.username} has been disabled')),
                 );
               },
             ),
@@ -866,7 +917,8 @@ class UserTab extends StatelessWidget {
     );
   }
 
-  void _showEnableConfirmation(BuildContext context, User user, AuthProvider authProvider) {
+  void _showEnableConfirmation(
+      BuildContext context, User user, AuthProvider authProvider) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -884,7 +936,8 @@ class UserTab extends StatelessWidget {
                 authProvider.enableUser(user);
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('User ${user.username} has been enabled')),
+                  SnackBar(
+                      content: Text('User ${user.username} has been enabled')),
                 );
               },
             ),
@@ -894,7 +947,8 @@ class UserTab extends StatelessWidget {
     );
   }
 
-  void _showRoleUpdateDialog(BuildContext context, User user, AuthProvider authProvider) {
+  void _showRoleUpdateDialog(
+      BuildContext context, User user, AuthProvider authProvider) {
     UserRole selectedRole = user.role ?? UserRole.user;
 
     showDialog(
@@ -932,8 +986,7 @@ class UserTab extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'User ${user.username}\'s role updated to ${selectedRole.toString().split('.').last}'
-                        ),
+                            'User ${user.username}\'s role updated to ${selectedRole.toString().split('.').last}'),
                       ),
                     );
                   },

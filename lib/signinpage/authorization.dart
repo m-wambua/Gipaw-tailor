@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/apis/apis.dart';
 import 'package:gipaw_tailor/main.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
@@ -9,6 +10,7 @@ import 'package:gipaw_tailor/signinpage/users.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class AuthProvider with ChangeNotifier {
   User? _currentUser;
@@ -353,6 +355,42 @@ class AuthProvider with ChangeNotifier {
     final storedPassword = prefs.getString(ADMIN_PASSWORD_KEY);
 
     return username == storedUsername && password == storedPassword;
+  }
+
+  Future<void> sendPassWordResetEmail(String email) async {
+    try {
+      if (email == null || email.isEmpty || !email.contains('@')) {
+        throw Exception("Invalid email address");
+      }
+
+      debugPrint("Sending password reset email to: $email");
+
+      final response = await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/auth/reset-passwword'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${await getAuthToken()}',
+          },
+          body: jsonEncode({'email': email}));
+      if (response.statusCode == 200) {
+        debugPrint("Password reset email sent successfully");
+      } else if (response.statusCode == 404) {
+        throw Exception("User with this email not found");
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+            errorData['message'] ?? "Failed to send password reset email");
+      }
+    } catch (e) {
+      debugPrint("Error sending password reset email: $e");
+      rethrow;
+    }
+  }
+
+  Future<String> getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+   // final storedToken = prefs.getString(AUTH_TOKEN_KEY) ?? '';
+    return '';
   }
 
   Future<void> disableUser(User user) async {
