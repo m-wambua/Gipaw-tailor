@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/clothesentrymodel/clothingandrepairsales.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
@@ -21,6 +23,7 @@ import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
 import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
 import 'package:intl/intl.dart';
+import 'package:gipaw_tailor/receipts/receipts.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -1770,34 +1773,32 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 TextButton(
                   onPressed: () async {
-                    bool isValid = true;
-                    for (var entry in entries) {
-                      if (entry['selectedUniformItem'] == null ||
-                          entry['selectedColor'] == null ||
-                          entry['selectedSize'] == null ||
-                          entry['numberController'].text.isEmpty ||
-                          int.tryParse(entry['numberController'].text) ==
-                              null) {
-                        isValid = false;
-                        break;
-                      }
+                    // Remove any entries with zero or invalid quantities
+                    List<Map<String, dynamic>> nonEmptyEntries =
+                        entries.where((entry) {
+                      int? quantity =
+                          int.tryParse(entry['numberController'].text);
+                      return quantity != null && quantity > 0;
+                    }).toList();
+
+                    if (nonEmptyEntries.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text(
+                            'Please add at least one item with valid quantity'),
+                        backgroundColor: Colors.orange,
+                      ));
+                      return;
                     }
 
-                    if (isValid) {
-                      await _processSaleAndUpdateStock(
-                          context, entries, stockManager);
-                      final salesManager =
-                          SalesManager('lib/uniforms/sales/sales.json');
-                      await salesManager.processSale(entries);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Please fill all fields with valid inputs'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
+                    await _processSaleAndUpdateStock(
+                      context,
+                      nonEmptyEntries,
+                      stockManager,
+                      'sale',
+                    );
+                    final salesManager =
+                        SalesManager('lib/uniforms/sales/sales.json');
+                    await salesManager.processSale(nonEmptyEntries);
                   },
                   child: const Text("Process Sale"),
                 ),
@@ -1815,7 +1816,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Future<void> _processSaleAndUpdateStock(BuildContext context,
+  Future<void> _processSaleAndUpdateStock1(BuildContext context,
       List<Map<String, dynamic>> entries, StockManager stockManager) async {
     try {
       bool success = await stockManager.processSale(entries);
@@ -1843,6 +1844,176 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.red,
       ));
     }
+  }
+
+  Future<void> _processSaleAndUpdateStock(
+      BuildContext context,
+      List<Map<String, dynamic>> entries,
+      StockManager stockManager,
+      String currentUser) async {
+    try {
+      // First validate entries and calculate total
+      if (entries.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please add at least one item'),
+          backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
+      // Calculate total amount first
+      double totalAmount = entries.fold(
+        0.0,
+        (sum, entry) =>
+            sum + (double.tryParse(entry['priceController'].text) ?? 0.0),
+      );
+
+      if (totalAmount <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Total amount must be greater than 0'),
+          backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
+      // Process the stock update first
+      bool success = await stockManager.processSale(entries);
+
+      if (success) {
+        // Show initial processing message
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator.adaptive(),
+              SizedBox(width: 10),
+              Text('Processing sale...'),
+            ],
+          ),
+          duration: Duration(seconds: 1),
+        ));
+
+        // Ask for receipt generation first
+        bool generateReceipt = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false, // Prevent outside dismissal
+              builder: (context) => AlertDialog(
+                title: const Text('Generate Receipt?'),
+                content: const Text(
+                    'Would you like to generate a receipt for this sale?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('No'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Yes'),
+                  ),
+                ],
+              ),
+            ) ??
+            false; // Default to false if dialog is dismissed
+
+        // Always show payment dialog regardless of receipt choice
+        List<PaymentEntryReciept>? payments =
+            await showDialog<List<PaymentEntryReciept>>(
+          context: context,
+          barrierDismissible: false, // Prevent outside dismissal
+          builder: (context) => PaymentCalculatorDialog(
+            totalAmount: totalAmount,
+          ),
+        );
+
+        // If payment was cancelled or invalid, still save the sale but mark it accordingly
+        if (payments == null || payments.isEmpty) {
+          payments = [
+            PaymentEntryReciept(method: 'Pending', amount: totalAmount)
+          ];
+        }
+
+        // Generate receipt number for both cases
+        String receiptNumber = _generateReceiptNumber();
+
+        CustomerDetails? customerDetails;
+        if (generateReceipt) {
+          // Only get customer details if receipt was requested
+          customerDetails = await showDialog<CustomerDetails>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => CustomerDetailsDialog(),
+          );
+        }
+
+        // Create receipt/sale record
+        Receipt receipt = Receipt(
+          receiptNumber: receiptNumber,
+          timestamp: DateTime.now(),
+          items: entries,
+          totalAmount: totalAmount,
+          payments: payments,
+          customerDetails: customerDetails,
+          servedBy: currentUser,
+        );
+
+        // Save to backend
+        await _saveReceiptToBackend(receipt);
+
+        // Send receipt if customer details were provided
+        if (generateReceipt && customerDetails != null) {
+          await _sendReceiptToCustomer(receipt);
+        }
+
+        // Close the sale screen
+        Navigator.of(context).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sale processed successfully'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (e) {
+      print('Error in _processSaleAndUpdateStock: $e'); // For debugging
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Error processing sale'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
+  void _showErrorMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Error processing sale. Please try again.'),
+        backgroundColor: Colors.red,
+        action: SnackBarAction(
+          label: 'Dismiss',
+          onPressed: () {},
+          textColor: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  String _generateReceiptNumber() {
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final random = Random().nextInt(1000).toString().padLeft(3, '0');
+    return 'RCP$timestamp$random';
+  }
+
+  Future<void> _saveReceiptToBackend(Receipt reciept) async {
+    //TODO
+  }
+
+  Future<void> _sendReceiptToCustomer(Receipt receipt) async {
+    //TODO
+  }
+
+  void _showSuccessMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text("Sale  processed successfully"),
+      backgroundColor: Colors.green,
+    ));
   }
 
   void _addNewEntry(List<Map<String, dynamic>> entries, Function setState) {
