@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 class PaymentEntryReciept {
   final String method;
   final double amount;
-  PaymentEntryReciept({required this.method, required this.amount});
+  final double? givenAmount;
+  PaymentEntryReciept(
+      {required this.method, required this.amount, this.givenAmount});
 }
 
 class CustomerDetails {
@@ -57,7 +59,7 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
     remainingAmount = widget.totalAmount;
   }
 
-  void addPayment(String method, double amount) {
+  void addPayment(String method, double amount, {double? givenAmount}) {
     if (amount <= 0) {
       setState(() {
         errorMessage = 'Amount must be greater than 0';
@@ -73,7 +75,8 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
     }
 
     setState(() {
-      payments.add(PaymentEntryReciept(method: method, amount: amount));
+      payments.add(PaymentEntryReciept(
+          method: method, amount: amount, givenAmount: givenAmount));
       remainingAmount -= amount;
       errorMessage = null;
     });
@@ -99,22 +102,30 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
               ),
             const SizedBox(height: 10),
             // Payment method buttons
-            Wrap(
-              spacing: 8,
-              children: ['MPesa', 'Cash', 'Card'].map((method) {
-                return ElevatedButton(
-                  onPressed: remainingAmount > 0
-                      ? () => _showAmountInput(method)
-                      : null,
-                  child: Text(method),
-                );
-              }).toList(),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 8,
+                children: ['MPesa', 'Cash', 'Card'].map((method) {
+                  return ElevatedButton(
+                    onPressed: remainingAmount > 0
+                        ? () => _showAmountInput(method)
+                        : null,
+                    child: Text(method),
+                  );
+                }).toList(),
+              ),
             ),
+
             if (payments.isNotEmpty) ...[
               const SizedBox(height: 10),
               ...payments.map((payment) => ListTile(
                     title: Text(
-                        '${payment.method}: \$${payment.amount.toStringAsFixed(2)}'),
+                        '${payment.method}: \$${payment.amount.toStringAsFixed(2)}' +
+                            (payment.givenAmount != null
+                                ? '\nChange: \$${(payment.givenAmount! - payment.amount).toStringAsFixed(2)}'
+                                : '')),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
@@ -146,49 +157,77 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
 
   void _showAmountInput(String method) {
     showDialog(
-      context: context,
-      builder: (context) {
-        TextEditingController amountController = TextEditingController();
-        return AlertDialog(
-          title: Text('Enter $method Amount'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  prefixText: '\$',
+        context: context,
+        builder: (context) {
+          TextEditingController amountController = TextEditingController();
+          TextEditingController givenAmountController = TextEditingController();
+          return StatefulBuilder(builder: (context, setState) {
+            double? amount = double.tryParse(amountController.text);
+            double? givenAmount = double.tryParse(givenAmountController.text);
+            double? change = givenAmount != null && amount != null
+                ? givenAmount - amount
+                : null;
+
+            return AlertDialog(
+              title: Text('Enter $method Amount'),
+              content: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount to pay',
+                    prefixText: '\$',
+                  ),
                 ),
-              ),
-              if (method == 'Cash') ...[
-                const SizedBox(height: 10),
-                // Add simple calculator for cash
-                // You can expand this part based on your needs
+                if (method == 'Cash') ...[
+                  const SizedBox(height: 10),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  TextField(
+                    controller: givenAmountController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Amount Given',
+                      prefixText: '\$',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (change != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Change: \$${change.toStringAsFixed(2)}',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: change < 0 ? Colors.red : Colors.green),
+                    )
+                  ],
+                ]
+              ]),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    double? amount = double.tryParse(amountController.text);
+                    if (amount != null) {
+                      addPayment(method, amount);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
               ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                double? amount = double.tryParse(amountController.text);
-                if (amount != null) {
-                  addPayment(method, amount);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
+            );
+            // Add simple calculator for cash
+            // You can expand this part based on your needs
+          });
+        });
   }
 }
 
