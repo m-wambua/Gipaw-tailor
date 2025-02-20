@@ -9,6 +9,8 @@ import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/receipts/receipts.dart';
+import 'package:gipaw_tailor/receipts/receiptservice.dart';
+import 'package:gipaw_tailor/receipts/salesreceiptpage.dart';
 import 'package:gipaw_tailor/remindersystem/reminderclass.dart';
 import 'package:gipaw_tailor/remindersystem/reminderpage.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
@@ -933,6 +935,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         UserRole.user
                       ],
                       onPressed: _uniformSales),
+                  ProtectedNavigationButton(
+                      text: 'UniformSales Summary',
+                      allowedRoles: [
+                        UserRole.manager,
+                        UserRole.user,
+                        UserRole.admin
+                      ],
+                      onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ReceiptPage()),
+                          )),
                   ProtectedNavigationButton(
                       text: "Sell Curtains",
                       allowedRoles: [
@@ -2001,8 +2015,15 @@ class _MyHomePageState extends State<MyHomePage> {
     return 'RCP$timestamp$random';
   }
 
-  Future<void> _saveReceiptToBackend(Receipt reciept) async {
-    //TODO
+  Future<void> _saveReceiptToBackend(Receipt receipt) async {
+    try {
+      final receiptService = ReceiptService();
+      await receiptService.saveReceipt(receipt);
+      print('Receipt saved successfully'); // For debugging
+    } catch (e) {
+      print('Error saving receipt: $e'); // For debugging
+      throw e; // Re-throw to be handled by the calling function
+    }
   }
 
   Future<void> _sendReceiptToCustomer(Receipt receipt) async {
