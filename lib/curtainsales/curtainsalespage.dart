@@ -14,18 +14,20 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   final _phoneNumberController = TextEditingController();
   final _measurementsController = TextEditingController();
   final _chargesController = TextEditingController();
+  final _curtainService = CurtainService();
   List<CurtainItem> curtainItems = [];
+  List<CurtainOrder> curtainOrders = [];
   @override
   void initState() {
     super.initState();
-    _loadCurtainItems();
+    _loadCurtainOrders();
   }
 
-  Future<void> _loadCurtainItems() async {
+  Future<void> _loadCurtainOrders() async {
     try {
-      final loadedCurtainItems = await CurtainManager.loadCurtainItems();
+      final loadedCurtainOrders = await _curtainService.getAllCurtainOrders();
       setState(() {
-        curtainItems = loadedCurtainItems;
+        curtainOrders = loadedCurtainOrders;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,17 +46,17 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
       body: Column(
         children: [
           Expanded(
-              child: curtainItems.isEmpty
+              child: curtainOrders.isEmpty
                   ? const Center(
                       child:
                           Text("No Curtain Item added yer. Add your first one"),
                     )
                   : ListView.builder(
-                      itemCount: curtainItems.length,
+                      itemCount: curtainOrders.length,
                       itemBuilder: (context, index) {
-                        final curtainItem = curtainItems[index];
+                        final curtainOrder = curtainOrders[index];
                         return GestureDetector(
-                          child: buildCurtainItemCard(curtainItem),
+                          child: buildCurtainItemCard(curtainOrder),
                         );
                       }))
         ],
@@ -68,27 +70,27 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     );
   }
 
-  Widget buildCurtainItemCard(CurtainItem curtainItem) {
-    double totalDeposited = curtainItem.curtainPaymentEntries
-        .map((entry) => double.parse(entry.deposit))
+  Widget buildCurtainItemCard(CurtainOrder curtainOrder) {
+    double totalDeposited = curtainOrder.payments 
+        .map((entry) => double.parse((entry.amount).toStringAsFixed(2)))
         .fold(0, (a, b) => a + b);
 
-    double originalCharges = double.parse(curtainItem.charges);
+    double originalCharges = double.parse((curtainOrder.totalAmount).toStringAsFixed(2));
     double remainingBalance = originalCharges - totalDeposited;
     return Card(
       child: ExpansionTile(
-        title: Text(curtainItem.name),
-        subtitle: Text('Phone Number: ${curtainItem.phoneNumber}'),
+        title: Text(curtainOrder.customerName),
+        subtitle: Text('Phone Number: ${curtainOrder.phoneNumber}'),
         children: [
           ListTile(
             title: Text(
-                'Material Owner: ${curtainItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
+                'Material Owner: ${curtainOrder.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
           ),
           ListTile(
-            title: Text('Notes: ${curtainItem.notes}'),
+            title: Text('Notes: ${curtainOrder.notes}'),
           ),
           ListTile(
-            title: Text("Curtain Type : ${curtainItem.curtainType}"),
+            title: Text("Curtain Type : ${curtainOrder.curtainType}"),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -103,11 +105,11 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                       color: Colors.black87),
                 ),
                 SizedBox(height: 8),
-                ...curtainItem.part.split(',').asMap().entries.map((entry) {
+                ...curtainOrder.part.split(',').asMap().entries.map((entry) {
                   int index = entry.key;
                   String part = entry.value.trim();
                   String measurement =
-                      curtainItem.measurement.split(',')[index].trim();
+                      curtainOrder.measurement.split(',')[index].trim();
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4.0),
                     child: Row(
@@ -130,7 +132,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             ),
           ),
           ListTile(
-            title: Text('Charges: ${curtainItem.charges}'),
+            title: Text('Charges: ${curtainOrder.totalAmount}'),
           ),
           ListTile(
             title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
@@ -141,30 +143,30 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           ),
           ExpansionTile(
             title: Text(
-                "Payment History(${curtainItem.curtainPaymentEntries.length} entries)"),
-            children: curtainItem.curtainPaymentEntries
+                "Payment History(${curtainOrder.payments.length} entries)"),
+            children: curtainOrder.payments
                 .map((entry) => ListTile(
-                      title: Text("Deposit: ${entry.deposit}"),
+                      title: Text("Deposit: ${entry.amount}"),
                       subtitle: Text(
-                          "Type: ${entry.paymentMethod}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
                     ))
                 .toList(),
           ),
           ListTile(
             title: Text(
-                'Pick Up Date: ${curtainItem.pickUpDate?.toIso8601String() ?? 'Not Scheduled'}'),
+                'Pick Up Date: ${curtainOrder.fulfillmentDate ?.toIso8601String() ?? 'Not Scheduled'}'),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton(
                   onPressed: () {
-                    _sendPickUpNotification(curtainItem);
+                    _sendPickUpNotification(curtainOrder);
                   },
                   child: Text('Ready for pickup')),
               ElevatedButton(
                   onPressed: () {
-                    _showUpdatePaymentDialog(curtainItem);
+                    _showUpdatePaymentDialog(curtainOrder);
                   },
                   child: Text('Update Payment'))
             ],
@@ -174,23 +176,23 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     );
   }
 
-  void _sendPickUpNotification(CurtainItem clothingItem) async {
+  void _sendPickUpNotification(CurtainOrder curtainOrder) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Pickup notification sent to ${clothingItem.name}")));
+          content: Text("Pickup notification sent to ${curtainOrder.customerName}")));
     } catch (e) {
       print('Notification error: $e');
     }
   }
 
-  void _showUpdatePaymentDialog(CurtainItem curtainItem) async {
+  void _showUpdatePaymentDialog(CurtainOrder curtainOrder) async {
     final depositController = TextEditingController();
     final paymentTypeController = TextEditingController(text: "Cash");
     await showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Update Payment for ${curtainItem.name}"),
+            title: Text("Update Payment for ${curtainOrder.customerName}"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -226,7 +228,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                   child: Text('Cancel')),
               ElevatedButton(
                   onPressed: () {
-                    _processPayment(curtainItem, depositController.text,
+                    _processPayment(curtainOrder, depositController.text,
                         paymentTypeController.text);
                     Navigator.of(context).pop();
                   },
@@ -237,22 +239,22 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   }
 
   void _processPayment(
-      CurtainItem curtainItem, String depositAmount, String paymentType) async {
-    CurtainpaymentEntry newPayment = CurtainpaymentEntry(
-      deposit: depositAmount,
-      balance: (double.parse(curtainItem.charges) -
-              (curtainItem.curtainPaymentEntries
-                      .fold(0, (sum, entry) => sum + int.parse(entry.deposit)) +
+      CurtainOrder curtainOrder, String depositAmount, String paymentType) async {
+    CurtainPayment newPayment = CurtainPayment(
+      amount: double.parse(depositAmount),
+      balance: (double.parse((curtainOrder.totalAmount).toStringAsFixed(2)) -
+              (curtainOrder.payments
+                      .fold(0, (sum, entry) => sum + int.parse((entry.amount).toStringAsFixed(2))) +
                   double.parse(depositAmount)))
           .toString(),
-      paymentDate: DateTime.now(),
-      paymentMethod: paymentType,
+      timestamp: DateTime.now(),
+      method: paymentType,
     );
 
-    curtainItem.curtainPaymentEntries.add(newPayment);
+    curtainOrder.payments.add(newPayment);
     CurtainManager.saveCurtainItem(curtainItems);
     setState(() {
-      _loadCurtainItems();
+      _loadCurtainOrders();
     });
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Payment of $depositAmount processed'),
@@ -717,7 +719,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                               Navigator.of(context).pop();
                             }
                             setState(() {
-                              _loadCurtainItems();
+                              _loadCurtainOrders();
                             });
                           },
                           child: const Text(

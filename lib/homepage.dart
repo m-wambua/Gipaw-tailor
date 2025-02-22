@@ -936,7 +936,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ],
                       onPressed: _uniformSales),
                   ProtectedNavigationButton(
-                      text: 'UniformSales Summary',
+                      text: 'Customer Receipts',
                       allowedRoles: [
                         UserRole.manager,
                         UserRole.user,

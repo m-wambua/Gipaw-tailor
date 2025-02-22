@@ -1,8 +1,144 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
+
+enum CurtainOrderStatus {
+  pending,
+  partial,
+  paid,
+  fulfilled,
+  cancelled,
+}
+
+enum CurtainPaymentStatus { deposit, partial, finalpayment }
+
+class CurtainOrder {
+  final String orderNumber;
+  final DateTime createdAt;
+  final String customerName;
+  final String phoneNumber;
+  final String materialOwner;
+  final String curtainType;
+  final String? imageUrl;
+  final String notes;
+  final String part;
+  final String measurement;
+  final double totalAmount;
+  final List<CurtainPayment> payments;
+  CurtainOrderStatus status;
+  DateTime? fulfillmentDate;
+  String createdBy;
+
+  CurtainOrder({
+    required this.orderNumber,
+    required this.createdAt,
+    required this.customerName,
+    required this.phoneNumber,
+    required this.materialOwner,
+    required this.curtainType,
+    this.imageUrl,
+    required this.notes,
+    required this.part,
+    required this.measurement,
+    required this.totalAmount,
+    required this.payments,
+    this.status = CurtainOrderStatus.pending,
+    this.fulfillmentDate,
+    required this.createdBy,
+  });
+  double get totalPaid =>
+      payments.fold(0.0, (sum, payment) => sum + payment.amount);
+
+  double get remainingBalance => totalAmount - totalPaid;
+  bool get isFullyPaid => remainingBalance <= 0;
+
+  Map<String, dynamic> toJson() => {
+        'orderNumber': orderNumber,
+        'createdAt': createdAt.toIso8601String(),
+        'customerName': customerName,
+        'phoneNumber': phoneNumber,
+        'materialOwner': materialOwner,
+        'curtainType': curtainType,
+        'imageUrl': imageUrl,
+        'notes': notes,
+        'part': part,
+        'measurement': measurement,
+        'totalAmount': totalAmount,
+        'payments': payments.map((payment) => payment.toJson()).toList(),
+        'status': status.toString().split('.').last,
+        'fulfillmentDate': fulfillmentDate?.toIso8601String(),
+        'createdBy': createdBy,
+      };
+  factory CurtainOrder.fromJson(Map<String, dynamic> json) => CurtainOrder(
+        orderNumber: json['orderNumber'],
+        createdAt: DateTime.parse(json['createdAt']),
+        customerName: json['customerName'],
+        phoneNumber: json['phoneNumber'],
+        materialOwner: json['materialOwner'],
+        curtainType: json['curtainType'],
+        imageUrl: json['imageUrl'],
+        notes: json['notes'],
+        part: json['part'],
+        measurement: json['measurement'],
+        totalAmount: json['totalAmount'],
+        status: CurtainOrderStatus.values.firstWhere(
+          (e) => e.toString() == json['status'],
+        ),
+        fulfillmentDate: json['fulfillmentDate'] != null
+            ? DateTime.parse(json['fulfillmentDate'])
+            : null,
+        createdBy: json['createdBy'],
+        payments: (json['payments'] as List)
+            .map((p) => CurtainPayment.fromJson(p))
+            .toList(),
+      );
+}
+
+class CurtainPayment {
+  final String paymentId;
+  final DateTime timestamp;
+  final double amount;
+  final String method;
+  final CurtainPaymentStatus status;
+  final String? receiptNumber;
+  final String recordedBy;
+
+  CurtainPayment({
+    required this.paymentId,
+    required this.timestamp,
+    required this.amount,
+    required this.method,
+    required this.status,
+    this.receiptNumber,
+    required this.recordedBy,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'paymentId': paymentId,
+        'timestamp': timestamp.toIso8601String(),
+        'amount': amount,
+        'method': method,
+        'status': status.toString(),
+        'receiptNumber': receiptNumber,
+        'recordedBy': recordedBy,
+      };
+
+  factory CurtainPayment.fromJson(Map<String, dynamic> json) => CurtainPayment(
+        paymentId: json['paymentId'],
+        timestamp: DateTime.parse(json['timestamp']),
+        amount: json['amount'],
+        method: json['method'],
+        status: CurtainPaymentStatus.values.firstWhere(
+          (e) => e.toString() == json['status'],
+        ),
+        receiptNumber: json['receiptNumber'],
+        recordedBy: json['recordedBy'],
+      );
+}
 
 class CurtainItem {
   String name;
@@ -98,6 +234,84 @@ class CurtainpaymentEntry {
     double depositAmount = double.parse(deposit);
     double remainingbalanceAmount = chargesAmount - depositAmount;
     return remainingbalanceAmount.toStringAsFixed(2);
+  }
+}
+
+class CurtainService {
+  static const String _storageKey = 'curtain_orders';
+
+  String generateOrderNumber() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(100).toString().padLeft(2, '0');
+    return 'CRT$timestamp$random';
+  }
+
+  String generatePaymentsId(String ordrNumber) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(100).toString().padLeft(2, '0');
+    return 'CPT$timestamp$random';
+  }
+
+  Future<void> saveCurtainOrder(CurtainOrder order) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> orders = prefs.getStringList(_storageKey) ?? [];
+    Map<String, dynamic> orderJson = order.toJson();
+    int existingIndex = orders.indexWhere((orderStr) {
+      Map<String, dynamic> existing = jsonDecode(orderStr);
+      return existing['orderNumber'] == order.orderNumber;
+    });
+    if (existingIndex >= 0) {
+      orders[existingIndex] = jsonEncode(orderJson);
+    } else {
+      orders.add(jsonEncode(orderJson));
+    }
+    await prefs.setStringList(_storageKey, orders);
+  }
+
+  Future<CurtainOrder?> getCurtainOrder(String orderNumber) async {
+    final orders = await getAllCurtainOrders();
+    try {
+      return orders.firstWhere(
+        (order) => order.orderNumber == orderNumber,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<CurtainOrder>> getAllCurtainOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> orders = prefs.getStringList(_storageKey) ?? [];
+
+    return orders.map((orderString) {
+      Map<String, dynamic> orderJson = jsonDecode(orderString);
+      return CurtainOrder.fromJson(orderJson);
+    }).toList();
+  }
+
+  double calculateTotalSales(List<CurtainOrder> orders) {
+    return orders.fold(0.0, (sum, order) => sum + order.totalAmount);
+  }
+
+  Map<String, double> getPaymentMethodBreakdown(List<CurtainOrder> orders) {
+    final breakdown = <String, double>{};
+    for (var order in orders) {
+      for (var payment in order.payments) {
+        breakdown.update(
+          payment.method,
+          (value) => value + payment.amount,
+          ifAbsent: () => payment.amount,
+        );
+      }
+    }
+    return breakdown;
+  }
+
+  List<PendingBalance> getPendingBalances(List<CurtainOrder> orders) {
+    return orders.where((order) => !order.isFullyPaid).map((order) {
+      final balance = order.remainingBalance;
+      return PendingBalance(order.customerName, balance);
+    }).toList();
   }
 }
 
