@@ -23,17 +23,19 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     _loadCurtainOrders();
   }
 
-  Future<void> _loadCurtainOrders() async {
+  Future _loadCurtainOrders() async {
     try {
       final loadedCurtainOrders = await _curtainService.getAllCurtainOrders();
       setState(() {
         curtainOrders = loadedCurtainOrders;
       });
+
+      // Add debug print
+      print('Loaded ${curtainOrders.length} orders');
     } catch (e) {
+      print('Error loading curtain items: $e');
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Error Loading Curtain Items")));
-
-      print('Error loading curtain items: $e');
     }
   }
 
@@ -71,11 +73,12 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   }
 
   Widget buildCurtainItemCard(CurtainOrder curtainOrder) {
-    double totalDeposited = curtainOrder.payments 
+    double totalDeposited = curtainOrder.payments
         .map((entry) => double.parse((entry.amount).toStringAsFixed(2)))
         .fold(0, (a, b) => a + b);
 
-    double originalCharges = double.parse((curtainOrder.totalAmount).toStringAsFixed(2));
+    double originalCharges =
+        double.parse((curtainOrder.totalAmount).toStringAsFixed(2));
     double remainingBalance = originalCharges - totalDeposited;
     return Card(
       child: ExpansionTile(
@@ -148,13 +151,13 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 .map((entry) => ListTile(
                       title: Text("Deposit: ${entry.amount}"),
                       subtitle: Text(
-                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.timestamp)}"),
                     ))
                 .toList(),
           ),
           ListTile(
             title: Text(
-                'Pick Up Date: ${curtainOrder.fulfillmentDate ?.toIso8601String() ?? 'Not Scheduled'}'),
+                'Pick Up Date: ${curtainOrder.fulfillmentDate?.toIso8601String() ?? 'Not Scheduled'}'),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -179,7 +182,8 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   void _sendPickUpNotification(CurtainOrder curtainOrder) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Pickup notification sent to ${curtainOrder.customerName}")));
+          content: Text(
+              "Pickup notification sent to ${curtainOrder.customerName}")));
     } catch (e) {
       print('Notification error: $e');
     }
@@ -238,27 +242,93 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
         });
   }
 
-  void _processPayment(
-      CurtainOrder curtainOrder, String depositAmount, String paymentType) async {
-    CurtainPayment newPayment = CurtainPayment(
-      amount: double.parse(depositAmount),
-      balance: (double.parse((curtainOrder.totalAmount).toStringAsFixed(2)) -
-              (curtainOrder.payments
-                      .fold(0, (sum, entry) => sum + int.parse((entry.amount).toStringAsFixed(2))) +
-                  double.parse(depositAmount)))
-          .toString(),
-      timestamp: DateTime.now(),
-      method: paymentType,
-    );
+  void _processPayment(CurtainOrder curtainOrder, String depositAmount,
+      String paymentType) async {
+    try {
+      final double amount = double.parse(depositAmount);
 
-    curtainOrder.payments.add(newPayment);
-    CurtainManager.saveCurtainItem(curtainItems);
-    setState(() {
-      _loadCurtainOrders();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Payment of $depositAmount processed'),
-    ));
+      final double newTotalPaid = curtainOrder.totalPaid + amount;
+
+      final CurtainPaymentStatus paymentStatus = _determinePaymentStatus(
+          totalAmount: curtainOrder.totalAmount,
+          currentlyPaid: curtainOrder.totalPaid,
+          newPaymentAmount: amount);
+
+      final String paymentId =
+          _curtainService.generatePaymentsId(curtainOrder.orderNumber);
+      final String? receiptNumber =
+          paymentStatus == CurtainPaymentStatus.finalpayment
+              ? 'RCP-$paymentId'
+              : null;
+
+      final CurtainPayment newPayment = CurtainPayment(
+          amount: amount,
+          timestamp: DateTime.now(),
+          method: paymentType,
+          paymentId: paymentId,
+          status: paymentStatus,
+          recordedBy: curtainOrder.createdBy,
+          receiptNumber: receiptNumber);
+      final updatePayments = [...curtainOrder.payments, newPayment];
+
+      final CurtainOrderStatus newStatus = _determineOrderStatus(
+          totalAmount: curtainOrder.totalAmount, totalPaid: newTotalPaid);
+
+      final updateOrder = CurtainOrder(
+          orderNumber: curtainOrder.orderNumber,
+          createdAt: curtainOrder.createdAt,
+          customerName: curtainOrder.customerName,
+          phoneNumber: curtainOrder.phoneNumber,
+          materialOwner: curtainOrder.materialOwner,
+          curtainType: curtainOrder.curtainType,
+          notes: curtainOrder.notes,
+          part: curtainOrder.part,
+          measurement: curtainOrder.measurement,
+          totalAmount: curtainOrder.totalAmount,
+          payments: curtainOrder.payments,
+          createdBy: curtainOrder.createdBy,
+          fulfillmentDate: curtainOrder.fulfillmentDate);
+      await _curtainService.saveCurtainOrder(updateOrder);
+      setState(() {
+        _loadCurtainOrders();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Payment of $depositAmount processed succesffully')));
+    } catch (e) {
+      print("Error Processing payment: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error Processing payment")));
+    }
+  }
+
+  CurtainPaymentStatus _determinePaymentStatus({
+    required double totalAmount,
+    required double currentlyPaid,
+    required double newPaymentAmount,
+  }) {
+    final double totalAfterPayment = currentlyPaid + newPaymentAmount;
+
+    if (currentlyPaid == 0) {
+      return CurtainPaymentStatus.deposit;
+    } else if (totalAfterPayment >= totalAmount) {
+      return CurtainPaymentStatus.finalpayment;
+    } else {
+      return CurtainPaymentStatus.partial;
+    }
+  }
+
+  CurtainOrderStatus _determineOrderStatus({
+    required double totalAmount,
+    required double totalPaid,
+  }) {
+    if (totalPaid >= totalAmount) {
+      return CurtainOrderStatus.paid;
+    } else if (totalPaid > 0) {
+      return CurtainOrderStatus.partial;
+    } else {
+      return CurtainOrderStatus.pending;
+    }
   }
 
   Future<void> _newOrRepair() async {
@@ -681,21 +751,73 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                             style: TextStyle(color: Colors.red),
                           )),
                       ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            // Made async to handle Future
                             if (formKey.currentState!.validate()) {
-                              // Save logic here
-                              List<CurtainpaymentEntry> payments = paymentPairs
-                                  .map((pair) => CurtainpaymentEntry(
-                                      deposit: pair['deposit']!.text,
-                                      balance: pair['balance']!.text,
-                                      paymentDate: pair['paymentDate'],
-                                      paymentMethod: pair['paymentType']))
-                                  .toList();
-                              CurtainItem newItem = CurtainItem(
-                                  name: _nameController.text,
+                              try {
+                                // Generate order number
+                                final String orderNumber =
+                                    _curtainService.generateOrderNumber();
+
+                                // Create payments list with proper status tracking
+                                final List<CurtainPayment> payments =
+                                    paymentPairs.map((pair) {
+                                  final double amount =
+                                      double.parse(pair['deposit']!.text);
+                                  final double totalAmount =
+                                      double.parse(_chargesController.text);
+
+                                  // Determine payment status based on order in sequence
+                                  final CurtainPaymentStatus status =
+                                      paymentPairs.indexOf(pair) == 0
+                                          ? CurtainPaymentStatus.deposit
+                                          : paymentPairs.indexOf(pair) ==
+                                                  paymentPairs.length - 1
+                                              ? CurtainPaymentStatus
+                                                  .finalpayment
+                                              : CurtainPaymentStatus.partial;
+
+                                  return CurtainPayment(
+                                    paymentId: _curtainService
+                                        .generatePaymentsId(orderNumber),
+                                    timestamp: pair['paymentDate'],
+                                    amount: amount,
+                                    method: pair['paymentType'],
+                                    status: status,
+                                    receiptNumber: status ==
+                                            CurtainPaymentStatus.finalpayment
+                                        ? 'RCP-${_curtainService.generatePaymentsId(orderNumber)}'
+                                        : null,
+                                    recordedBy:
+                                        getCurrentUser(), // Assuming you have a method to get current user
+                                  );
+                                }).toList();
+
+                                // Calculate total amount from charges
+                                final double totalAmount =
+                                    double.parse(_chargesController.text);
+
+                                // Calculate total paid amount
+                                final double totalPaid = payments.fold(0.0,
+                                    (sum, payment) => sum + payment.amount);
+
+                                // Determine initial order status
+                                final CurtainOrderStatus status =
+                                    totalPaid >= totalAmount
+                                        ? CurtainOrderStatus.paid
+                                        : totalPaid > 0
+                                            ? CurtainOrderStatus.partial
+                                            : CurtainOrderStatus.pending;
+
+                                // Create new curtain order
+                                final CurtainOrder newOrder = CurtainOrder(
+                                  orderNumber: orderNumber,
+                                  createdAt: DateTime.now(),
+                                  customerName: _nameController.text,
                                   phoneNumber: _phoneNumberController.text,
                                   materialOwner:
-                                      materialOwner ? 'true' : 'false',
+                                      materialOwner ? 'Customer' : 'Shop',
+                                  curtainType: curtainTypes.first,
                                   notes: _measurementsController.text,
                                   part: measurementPairs
                                       .map((pair) => pair['part']!.text)
@@ -703,24 +825,38 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                                   measurement: measurementPairs
                                       .map((pair) => pair['measurement']!.text)
                                       .join(','),
-                                  curtainType: curtainTypes.first,
-                                  charges: _chargesController.text,
-                                  orderDate: DateTime.now(),
-                                  curtainPaymentEntries: payments);
-                              setState(() {
-                                curtainItems.add(newItem);
-                              });
+                                  totalAmount: totalAmount,
+                                  payments: payments,
+                                  createdBy:
+                                      getCurrentUser(), // Assuming you have a method to get current user
+                                  status: status,
+                                );
 
-                              String curtainItemName =
-                                  ClothingItemIdentifier.generateIdentifier(
-                                      _nameController.text,
-                                      _phoneNumberController.text);
-                              CurtainManager.saveCurtainItem(curtainItems);
-                              Navigator.of(context).pop();
+                                // Save the order using the service
+                                await _curtainService
+                                    .saveCurtainOrder(newOrder);
+
+                                // Refresh the orders list
+                                await _loadCurtainOrders();
+
+                                // Show success message
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Curtain order saved successfully')),
+                                );
+
+                                // Close the form
+                                Navigator.of(context).pop();
+                              } catch (e) {
+                                print('Error saving curtain order: $e');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Error saving curtain order')),
+                                );
+                              }
                             }
-                            setState(() {
-                              _loadCurtainOrders();
-                            });
                           },
                           child: const Text(
                             'Save',
@@ -728,13 +864,17 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                           )),
                     ],
                   ),
-                ),
+                )
               ],
             );
           },
         );
       },
     );
+  }
+
+  String getCurrentUser() {
+    return 'current_user_id';
   }
 
   Future<void> _addSample() async {

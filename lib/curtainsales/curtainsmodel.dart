@@ -16,6 +16,34 @@ enum CurtainOrderStatus {
 
 enum CurtainPaymentStatus { deposit, partial, finalpayment }
 
+CurtainPaymentStatus _determinePaymentStatus({
+  required double totalAmount,
+  required double currentlyPaid,
+  required double newPaymentAmount,
+}) {
+  final double totalAfterPayment = currentlyPaid + newPaymentAmount;
+  if (currentlyPaid == 0) {
+    return CurtainPaymentStatus.deposit;
+  } else if (totalAfterPayment >= totalAmount) {
+    return CurtainPaymentStatus.finalpayment;
+  } else {
+    return CurtainPaymentStatus.partial;
+  }
+}
+
+CurtainOrderStatus _determineOrderStatus({
+  required double totalAmount,
+  required double totalPaid,
+}) {
+  if (totalPaid >= totalAmount) {
+    return CurtainOrderStatus.paid;
+  } else if (totalPaid > 0) {
+    return CurtainOrderStatus.partial;
+  } else {
+    return CurtainOrderStatus.pending;
+  }
+}
+
 class CurtainOrder {
   final String orderNumber;
   final DateTime createdAt;
@@ -68,10 +96,10 @@ class CurtainOrder {
         'part': part,
         'measurement': measurement,
         'totalAmount': totalAmount,
-        'payments': payments.map((payment) => payment.toJson()).toList(),
-        'status': status.toString().split('.').last,
+        'status': status.name, // Using .name to get the enum value as a string
         'fulfillmentDate': fulfillmentDate?.toIso8601String(),
         'createdBy': createdBy,
+        'payments': payments.map((p) => p.toJson()).toList(),
       };
   factory CurtainOrder.fromJson(Map<String, dynamic> json) => CurtainOrder(
         orderNumber: json['orderNumber'],
@@ -84,10 +112,9 @@ class CurtainOrder {
         notes: json['notes'],
         part: json['part'],
         measurement: json['measurement'],
-        totalAmount: json['totalAmount'],
-        status: CurtainOrderStatus.values.firstWhere(
-          (e) => e.toString() == json['status'],
-        ),
+        totalAmount: (json['totalAmount'] as num).toDouble(),
+        status: CurtainOrderStatus.values
+            .byName(json['status']), // This is the key fix
         fulfillmentDate: json['fulfillmentDate'] != null
             ? DateTime.parse(json['fulfillmentDate'])
             : null,
@@ -252,20 +279,30 @@ class CurtainService {
     return 'CPT$timestamp$random';
   }
 
-  Future<void> saveCurtainOrder(CurtainOrder order) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> orders = prefs.getStringList(_storageKey) ?? [];
-    Map<String, dynamic> orderJson = order.toJson();
-    int existingIndex = orders.indexWhere((orderStr) {
-      Map<String, dynamic> existing = jsonDecode(orderStr);
-      return existing['orderNumber'] == order.orderNumber;
-    });
-    if (existingIndex >= 0) {
-      orders[existingIndex] = jsonEncode(orderJson);
-    } else {
-      orders.add(jsonEncode(orderJson));
+  Future<bool> saveCurtainOrder(CurtainOrder order) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      List<String> orders = prefs.getStringList(_storageKey) ?? [];
+      Map orderJson = order.toJson();
+
+      int existingIndex = orders.indexWhere((orderStr) {
+        Map existing = jsonDecode(orderStr);
+        return existing['orderNumber'] == order.orderNumber;
+      });
+
+      if (existingIndex >= 0) {
+        orders[existingIndex] = jsonEncode(orderJson);
+      } else {
+        orders.add(jsonEncode(orderJson));
+      }
+
+      final result = await prefs.setStringList(_storageKey, orders);
+      print('Order saved successfully. Total orders: ${orders.length}');
+      return result;
+    } catch (e) {
+      print('Error saving order: $e');
+      return false;
     }
-    await prefs.setStringList(_storageKey, orders);
   }
 
   Future<CurtainOrder?> getCurtainOrder(String orderNumber) async {
@@ -283,10 +320,27 @@ class CurtainService {
     final prefs = await SharedPreferences.getInstance();
     List<String> orders = prefs.getStringList(_storageKey) ?? [];
 
-    return orders.map((orderString) {
-      Map<String, dynamic> orderJson = jsonDecode(orderString);
-      return CurtainOrder.fromJson(orderJson);
-    }).toList();
+    // Add debug prints
+    print('Raw orders from SharedPreferences: $orders');
+
+    if (orders.isEmpty) {
+      print('No orders found in SharedPreferences');
+      return [];
+    }
+
+    try {
+      List<CurtainOrder> parsedOrders = orders.map((orderString) {
+        print('Parsing order string: $orderString');
+        Map orderJson = jsonDecode(orderString);
+        return CurtainOrder.fromJson(orderJson.cast<String, dynamic>());
+      }).toList();
+
+      print('Successfully parsed ${parsedOrders.length} orders');
+      return parsedOrders;
+    } catch (e) {
+      print('Error parsing orders: $e');
+      rethrow;
+    }
   }
 
   double calculateTotalSales(List<CurtainOrder> orders) {
