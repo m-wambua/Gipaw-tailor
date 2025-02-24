@@ -430,17 +430,17 @@ class PendingBalance {
   PendingBalance(this.customerName, this.amount);
 }
 
-double calculateTotalSales(List<ClothingItem> items) {
+double calculateTotalSales(List<CurtainItem> items) {
   return items.fold(0.0, (sum, item) => sum + double.parse(item.charges));
 }
 
-Map<String, double> getPaymentTypeBreakdown(List<ClothingItem> items) {
+Map<String, double> getPaymentTypeBreakdown(List<CurtainItem> items) {
   final breakdown = <String, double>{};
 
   for (var item in items) {
-    for (var payment in item.paymentEntries) {
+    for (var payment in item.curtainPaymentEntries) {
       breakdown.update(
-        payment.paymentType,
+        payment.paymentMethod,
         (value) => value + double.parse(payment.deposit),
         ifAbsent: () => double.parse(payment.deposit),
       );
@@ -450,15 +450,15 @@ Map<String, double> getPaymentTypeBreakdown(List<ClothingItem> items) {
   return breakdown;
 }
 
-List<PendingBalance> getPendingBalances(List<ClothingItem> items) {
+List<PendingBalance> getPendingBalances(List<CurtainItem> items) {
   return items.where((item) {
-    final totalPaid = item.paymentEntries.fold(
+    final totalPaid = item.curtainPaymentEntries.fold(
       0.0,
       (sum, payment) => sum + double.parse(payment.deposit),
     );
     return totalPaid < double.parse(item.charges);
   }).map((item) {
-    final totalPaid = item.paymentEntries.fold(
+    final totalPaid = item.curtainPaymentEntries.fold(
       0.0,
       (sum, payment) => sum + double.parse(payment.deposit),
     );

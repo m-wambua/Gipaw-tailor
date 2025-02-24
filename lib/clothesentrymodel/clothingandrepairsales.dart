@@ -23,8 +23,8 @@ class _SalesSummaryState extends State<SalesSummary> {
 
   Widget _buildBody() {
 // TODO: implement build
-    return FutureBuilder<List<ClothingItem>>(
-        future: ClotthingManager.loadClothingItems(),
+    return FutureBuilder<List<ClothingOrder>>(
+        future: ClothingService().getAllClothingOrders(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -33,9 +33,10 @@ class _SalesSummaryState extends State<SalesSummary> {
           final items = snapshot.data!;
           final filteredItems =
               filterItemsByDateRange(items, _selectedDateRange);
-          final totalSales = calculateTotalSales(items);
-          final paymentTypeBreakdown = getPaymentTypeBreakdown(items);
-          final pendingBalances = getPendingBalances(items);
+          final totalSales = ClothingService().calculateTotalSales(items);
+          final paymentTypeBreakdown =
+              ClothingService().getPaymentMethodsBreakDown(items);
+          final pendingBalances = ClothingService().getPendingBalances(items);
 
           return SingleChildScrollView(
             child: Padding(
@@ -55,7 +56,7 @@ class _SalesSummaryState extends State<SalesSummary> {
                   const SizedBox(
                     height: 16,
                   ),
-                  _buildPendingBalances(pendingBalances),
+                  //_buildPendingBalances(pendingBalances),
                   buildPaymentSummaryTable(items)
                 ],
               ),
@@ -172,6 +173,7 @@ class _SalesSummaryState extends State<SalesSummary> {
       ),
     );
   }
+  /*
 
   Widget _buildPendingBalances(List<PendingBalance> pendingBalances) {
     return Card(
@@ -205,8 +207,9 @@ class _SalesSummaryState extends State<SalesSummary> {
       ),
     );
   }
+  */
 
-  Widget buildPaymentSummaryTable(List<ClothingItem> items) {
+  Widget buildPaymentSummaryTable(List<ClothingOrder> items) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -236,29 +239,31 @@ class _SalesSummaryState extends State<SalesSummary> {
                 ],
                 rows: items.map((item) {
                   // Calculate total paid amount
-                  double totalPaid = item.paymentEntries.fold(
+                  double totalPaid = item.payments.fold(
                     0.0,
-                    (sum, payment) => sum + double.parse(payment.deposit),
+                    (sum, payment) =>
+                        sum + double.parse((payment.amount).toStringAsFixed(2)),
                   );
 
                   // Calculate remaining balance
-                  double totalCharged = double.parse(item.charges);
+                  double totalCharged =
+                      double.parse((item.totalAmount).toStringAsFixed(2));
                   double remainingBalance = totalCharged - totalPaid;
 
                   // Get last payment method and date
-                  String lastPaymentMethod = item.paymentEntries.isNotEmpty
-                      ? item.paymentEntries.last.paymentType
+                  String lastPaymentMethod = item.payments.isNotEmpty
+                      ? item.payments.last.method
                       : 'N/A';
 
-                  String lastPaymentDate = item.paymentEntries.isNotEmpty
-                      ? _formatDate(item.paymentEntries.last.paymentDate)
+                  String lastPaymentDate = item.payments.isNotEmpty
+                      ? _formatDate(item.payments.last.timestamp)
                       : 'N/A';
 
                   return DataRow(
                     cells: [
-                      DataCell(Text(item.name)),
+                      DataCell(Text(item.customerName)),
                       DataCell(Text(item.phoneNumber)),
-                      DataCell(Text(item.measurements)),
+                      DataCell(Text(item.measurement)),
                       DataCell(Text('KES ${totalCharged.toStringAsFixed(2)}')),
                       DataCell(Text('KES ${totalPaid.toStringAsFixed(2)}')),
                       DataCell(Text(
@@ -286,18 +291,21 @@ class _SalesSummaryState extends State<SalesSummary> {
     );
   }
 
-  Widget _buildSummaryFooter(List<ClothingItem> items) {
-    double totalCharged =
-        items.fold(0.0, (sum, item) => sum + double.parse(item.charges));
+  Widget _buildSummaryFooter(List<ClothingOrder> items) {
+    double totalCharged = items.fold(
+        0.0,
+        (sum, item) =>
+            sum + double.parse((item.totalAmount).toStringAsFixed(2)));
 
     double totalPaid = items.fold(
         0.0,
         (sum, item) =>
             sum +
-            item.paymentEntries.fold(
+            item.payments.fold(
                 0.0,
                 (paymentSum, payment) =>
-                    paymentSum + double.parse(payment.deposit)));
+                    paymentSum +
+                    double.parse((payment.amount).toStringAsFixed(2))));
 
     double totalBalance = totalCharged - totalPaid;
 
@@ -325,14 +333,14 @@ class _SalesSummaryState extends State<SalesSummary> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  List<ClothingItem> filterItemsByDateRange(
-      List<ClothingItem> items, DateTimeRange? range) {
+  List<ClothingOrder> filterItemsByDateRange(
+      List<ClothingOrder> items, DateTimeRange? range) {
     if (range == null) return items;
 
     return items.where((item) {
-      final hasPaymentsInRange = item.paymentEntries.any((payment) =>
-          payment.paymentDate.isAfter(range.start) &&
-          payment.paymentDate.isBefore(range.end.add(const Duration(days: 1))));
+      final hasPaymentsInRange = item.payments.any((payment) =>
+          payment.timestamp.isAfter(range.start) &&
+          payment.timestamp.isBefore(range.end.add(const Duration(days: 1))));
       return hasPaymentsInRange;
     }).toList();
   }

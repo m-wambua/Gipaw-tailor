@@ -53,12 +53,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String stockPath = 'lib/uniforms/stock/stock.json';
   final stockManager = StockManager('lib/uniforms/stock/stock.json');
   List<Map<String, dynamic>> entries = [];
+  List<ClothingOrder> clothingOrder = [];
 
   final List<UserRole> allowedRoles = [];
 
   final double sidebarWidth = 250.0;
 
-  List<ClothingItem> clothingItems = [];
+  
   List<CurtainItem> curtainItems = [];
 
   @override
@@ -70,9 +71,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _loadClothingItems() async {
     try {
-      final loadedClothingItems = await ClotthingManager.loadClothingItems();
+      final loadedClothingItems = await ClothingService().getAllClothingOrders();
       setState(() {
-        clothingItems = loadedClothingItems;
+        clothingOrder = loadedClothingItems;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
     ];
     bool materialOwner = false;
     final paymentTypes = ['Cash', 'Card', 'Bank Transfer', 'Mpesa'];
+    TextEditingController emailController=TextEditingController();
 
     await showDialog(
         context: context,
@@ -451,45 +453,58 @@ class _MyHomePageState extends State<MyHomePage> {
                             style: TextStyle(color: Colors.red),
                           )),
                       ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (formKey.currentState!.validate()) {
-                              List<PaymentEntry> payments = paymentPairs
-                                  .map(
-                                    (pair) => PaymentEntry(
-                                        deposit: pair['deposit']!.text,
-                                        balance: pair['balance']!.text,
-                                        paymentDate: pair['paymentDate'],
-                                        paymentType: pair['paymentType']),
-                                  )
-                                  .toList();
-                              ClothingItem newItem = ClothingItem(
-                                name: _namecontroller.text,
-                                phoneNumber: _phoneNumbercontroller.text,
-                                materialOwner: materialOwner,
-                                measurements: _measurementsController.text,
-                                part: measurementPairs
-                                    .map((pair) => pair['part']!.text)
-                                    .join(','),
-                                measurement: measurementPairs
-                                    .map((pair) => pair['measurement']!.text)
-                                    .join(','),
-                                charges: _chargesController.text,
-                                paymentEntries: payments,
-                              );
-                              setState(() {
-                                clothingItems.add(newItem);
-                              });
 
-                              String clothingItemName =
-                                  ClothingItemIdentifier.generateIdentifier(
-                                      _namecontroller.text,
-                                      _phoneNumbercontroller.text);
-                              ClotthingManager.saveClothingItem(clothingItems);
-                            }
-                            setState(() {
-                              _loadClothingItems();
-                            });
-                          },
+                              try{
+                                final String orderNumber=ClothingService().generateOrderNumber();
+                                final List<ClothingPayment> payments=paymentPairs.map((pair){
+                                  final double amount=double.parse(pair['deposit']!.text);
+                                  final double totalAmount=double.parse(_chargesController.text);
+                                  final ClothingPaymentStatus status=paymentPairs.indexOf(pair)==0 ? ClothingPaymentStatus.deposit : paymentPairs.length - 1 == paymentPairs.indexOf(pair) ? ClothingPaymentStatus.finalpayment : ClothingPaymentStatus.partial;
+
+                                  return ClothingPayment(paymentId: ClothingService().generatePaymentId(orderNumber), timestamp: pair['paymentDate'],
+                                   amount: amount,
+                                    method: pair['paymentType'],
+                                     status: status,
+                                      receiptNumber: status== ClothingPaymentStatus.finalpayment ? 'RCP-${ClothingService().generatePaymentId(orderNumber)}': null,
+                                       recorderdBy: getCurrentUser());
+                                  
+                                }).toList();
+                                final double totalAmount=double.parse(_chargesController.text);
+                                final double totalPaid=payments.fold(0.0,(sum,payment)=>sum + payment.amount);
+
+                                final ClothesOrderStatus status=
+                                totalPaid>= totalAmount ? ClothesOrderStatus.paid :totalPaid>0 ? ClothesOrderStatus.partial : ClothesOrderStatus.pending;  
+
+                                final ClothingOrder order=ClothingOrder(
+                                  orderName: orderNumber,
+                                 customerName: _namecontroller.text,
+                                 createdAt: DateTime.now(),
+                                  phoneNumber: _phoneNumbercontroller.text, 
+                                  email: emailController.text,
+                                  materialOwner: materialOwner ? 'Customer' : 'Shop',
+                                   
+                                    part: measurementPairs.map((pair)=>pair['part']!.text).join(','),
+                                     measurement: measurementPairs.map((pair)=>pair['measurement']!.text).join(','),
+                                    notes: _commentsController.text, 
+                                    totalAmount: double.parse(_chargesController.text), payments: payments, status: status,
+                                     createdBy: getCurrentUser(),
+                                     imageUrl: '',
+                                      fulfillmentDate: DateTime.now().add(const Duration(days: 7)),
+                                      
+                                    
+                                     );
+                                     await ClothingService().saveClothingOrder(order);
+
+                                     await _loadClothingItems();
+
+                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Clothing Order Saved successfully')));
+                                      Navigator.pop(context);
+                              } catch(e){
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error Saving Clothing Order')));
+                              }
+                            }},
                           child: const Text(
                             'Save',
                             style: TextStyle(color: Colors.green),
@@ -501,6 +516,9 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           );
         });
+  }
+    String getCurrentUser() {
+    return 'current_user_id';
   }
 
   void _repair(String newClothing) async {
@@ -1146,21 +1164,21 @@ class _MyHomePageState extends State<MyHomePage> {
           Expanded(
               child: Column(children: [
             Expanded(
-                child: clothingItems.isEmpty
+                child: clothingOrder.isEmpty
                     ? const Center(
                         child: Text(
                             'No Clothing Item added yet. Add your first one!'),
                       )
                     : ListView.builder(
-                        itemCount: clothingItems.length + curtainItems.length,
+                        itemCount: clothingOrder.length + curtainItems.length,
                         itemBuilder: (context, index) {
-                          if (index < clothingItems.length) {
-                            final clothingItem = clothingItems[index];
+                          if (index < clothingOrder.length) {
+                            final order = clothingOrder[index];
                             return GestureDetector(
-                                child: buildClothingItemCard(clothingItem));
+                                child: buildClothingItemCard(order));
                           }
                           final curtainItem =
-                              curtainItems[index - clothingItems.length];
+                              curtainItems[index - clothingOrder.length];
                           return GestureDetector(
                             child: buildCurtainItemCard(curtainItem),
                           );
@@ -1374,28 +1392,29 @@ class _MyHomePageState extends State<MyHomePage> {
     ));
   }
 
-  Widget buildClothingItemCard(ClothingItem clothingItem) {
-    double totalDeposited = clothingItem.paymentEntries
-        .map((entry) => double.parse(entry.deposit))
+  Widget buildClothingItemCard(ClothingOrder clothingItem) {
+    double totalDeposited = clothingItem.payments
+        .map((entry) => double.parse((entry.amount).toStringAsFixed(2)))
         .fold(0, (a, b) => a + b);
 
-    double originalCharges = double.parse(clothingItem.charges);
+    double originalCharges =
+        double.parse((clothingItem.totalAmount).toStringAsFixed(2));
     double remainingBalance = originalCharges - totalDeposited;
     return Card(
       child: ExpansionTile(
         title: Flexible(
             child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(clothingItem.name), Text("Clothing")],
+          children: [Text(clothingItem.customerName), Text("Clothing")],
         )),
         subtitle: Text('Phone Number: ${clothingItem.phoneNumber}'),
         children: [
           ListTile(
             title: Text(
-                'Material Owner: ${clothingItem.materialOwner ? 'Customer Material' : 'Tailor Material'}'),
+                'Material Owner: ${clothingItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
           ),
           ListTile(
-            title: Text('Measurements: ${clothingItem.measurements}'),
+            title: Text('Measurements: ${clothingItem.measurement}'),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -1437,7 +1456,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           ListTile(
-            title: Text('Charges: ${clothingItem.charges}'),
+            title: Text('Charges: ${clothingItem.totalAmount}'),
           ),
           ListTile(
             title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
@@ -1448,18 +1467,18 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           ExpansionTile(
             title: Text(
-                "Payment History(${clothingItem.paymentEntries.length} entries)"),
-            children: clothingItem.paymentEntries
+                "Payment History(${clothingItem.payments.length} entries)"),
+            children: clothingItem.payments
                 .map((entry) => ListTile(
-                      title: Text("Deposit: ${entry.deposit}"),
+                      title: Text("Deposit: ${entry.amount}"),
                       subtitle: Text(
-                          "Type: ${entry.paymentType}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.timestamp)}"),
                     ))
                 .toList(),
           ),
           ListTile(
             title: Text(
-                'Pick Up Date: ${clothingItem.pickUpDate?.toIso8601String() ?? 'Not Scheduled'}'),
+                'Pick Up Date: ${clothingItem.fulfillmentDate?.toIso8601String() ?? 'Not Scheduled'}'),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1481,23 +1500,24 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _sendPickUpNotification(ClothingItem clothingItem) async {
+  void _sendPickUpNotification(ClothingOrder clothingItem) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Pickup notification sent to ${clothingItem.name}")));
+          content: Text(
+              "Pickup notification sent to ${clothingItem.customerName}")));
     } catch (e) {
       print('Notification error: $e');
     }
   }
 
-  void _showUpdatePaymentDialog(ClothingItem clothingItem) async {
+  void _showUpdatePaymentDialog(ClothingOrder clothingItem) async {
     final depositController = TextEditingController();
     final paymentTypeController = TextEditingController(text: "Cash");
     await showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Update Payment for ${clothingItem.name}"),
+            title: Text("Update Payment for ${clothingItem.customerName}"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1543,27 +1563,75 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  void _processPayment(ClothingItem clothingItem, String depositAmount,
+  void _processPayment(ClothingOrder clothingItem, String depositAmount,
       String paymentType) async {
-    PaymentEntry newPayment = PaymentEntry(
-      deposit: depositAmount,
-      balance: (double.parse(clothingItem.charges) -
-              (clothingItem.paymentEntries
-                      .fold(0, (sum, entry) => sum + int.parse(entry.deposit)) +
-                  double.parse(depositAmount)))
-          .toString(),
-      paymentDate: DateTime.now(),
-      paymentType: paymentType,
-    );
+    try {
+      final double amount = double.parse(depositAmount);
+      final double newTotalPaid = clothingItem.totalPaid + amount;
 
-    clothingItem.paymentEntries.add(newPayment);
-    ClotthingManager.saveClothingItem(clothingItems);
-    setState(() {
-      _loadClothingItems();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Payment of $depositAmount processed'),
-    ));
+      final ClothingPaymentStatus paymentStatus = _determinePaymentStatus(
+          totalAmount: clothingItem.totalAmount,
+          currentlyPaid: clothingItem.totalPaid,
+          newPaymentAmount: amount);
+
+      final String paymentId =
+          ClothingService().generatePaymentId(clothingItem.orderName);
+      final String? receiptNumber =
+          paymentStatus == ClothingPaymentStatus.finalpayment
+              ? "RCP-$paymentId"
+              : null;
+
+      final ClothingPayment newPayment = ClothingPayment(
+        amount: amount,
+        timestamp: DateTime.now(),
+        method: paymentType,
+        status: paymentStatus,
+        receiptNumber: receiptNumber,
+        recorderdBy: clothingItem.createdBy,
+        paymentId: paymentId,
+      );
+      final updatePayment = [...clothingItem.payments, newPayment];
+      final updateOrder = ClothingOrder(
+          orderName: clothingItem.orderName,
+          createdAt: clothingItem.createdAt,
+          customerName: clothingItem.customerName,
+          phoneNumber: clothingItem.phoneNumber,
+          materialOwner: clothingItem.materialOwner,
+           
+          imageUrl: clothingItem.imageUrl,
+          notes: clothingItem.notes,
+          part: clothingItem.part,
+          measurement: clothingItem.measurement,
+          totalAmount: clothingItem.totalAmount,
+          payments: clothingItem.payments,
+          fulfillmentDate: clothingItem.fulfillmentDate,
+          createdBy: clothingItem.createdBy);
+      await ClothingService().saveClothingOrder(updateOrder);
+      setState(() {
+        _loadClothingItems();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Payment of $depositAmount processed successfully")));
+    } catch (e) {
+      print('Error processing payment: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error processing payment: $e")));
+    }
+  }
+
+  ClothingPaymentStatus _determinePaymentStatus(
+      {required double totalAmount,
+      required double currentlyPaid,
+      required double newPaymentAmount}) {
+    final double totalAfterPayment = currentlyPaid + newPaymentAmount;
+    if (currentlyPaid == 0) {
+      return ClothingPaymentStatus.deposit;
+    } else if (totalAfterPayment >= totalAmount) {
+      return ClothingPaymentStatus.finalpayment;
+    } else {
+      return ClothingPaymentStatus.partial;
+    }
+  
   }
 
   Future<void> _uniformSales() async {
