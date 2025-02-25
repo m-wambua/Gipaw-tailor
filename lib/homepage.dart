@@ -59,8 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final double sidebarWidth = 250.0;
 
-  
-  List<CurtainItem> curtainItems = [];
+  List<CurtainOrder> curtainItems = [];
 
   @override
   void initState() {
@@ -71,7 +70,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _loadClothingItems() async {
     try {
-      final loadedClothingItems = await ClothingService().getAllClothingOrders();
+      final loadedClothingItems =
+          await ClothingService().getAllClothingOrders();
       setState(() {
         clothingOrder = loadedClothingItems;
       });
@@ -83,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _loadCurtainItems() async {
     try {
-      final loadedCurtainItems = await CurtainManager.loadCurtainItems();
+      final loadedCurtainItems = await CurtainService().getAllCurtainOrders();
       setState(() {
         curtainItems = loadedCurtainItems;
         print(curtainItems);
@@ -112,7 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
     ];
     bool materialOwner = false;
     final paymentTypes = ['Cash', 'Card', 'Bank Transfer', 'Mpesa'];
-    TextEditingController emailController=TextEditingController();
+    TextEditingController emailController = TextEditingController();
 
     await showDialog(
         context: context,
@@ -455,56 +455,91 @@ class _MyHomePageState extends State<MyHomePage> {
                       ElevatedButton(
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
+                              try {
+                                final String orderNumber =
+                                    ClothingService().generateOrderNumber();
+                                final List<ClothingPayment> payments =
+                                    paymentPairs.map((pair) {
+                                  final double amount =
+                                      double.parse(pair['deposit']!.text);
+                                  final double totalAmount =
+                                      double.parse(_chargesController.text);
+                                  final ClothingPaymentStatus status =
+                                      paymentPairs.indexOf(pair) == 0
+                                          ? ClothingPaymentStatus.deposit
+                                          : paymentPairs.length - 1 ==
+                                                  paymentPairs.indexOf(pair)
+                                              ? ClothingPaymentStatus
+                                                  .finalpayment
+                                              : ClothingPaymentStatus.partial;
 
-                              try{
-                                final String orderNumber=ClothingService().generateOrderNumber();
-                                final List<ClothingPayment> payments=paymentPairs.map((pair){
-                                  final double amount=double.parse(pair['deposit']!.text);
-                                  final double totalAmount=double.parse(_chargesController.text);
-                                  final ClothingPaymentStatus status=paymentPairs.indexOf(pair)==0 ? ClothingPaymentStatus.deposit : paymentPairs.length - 1 == paymentPairs.indexOf(pair) ? ClothingPaymentStatus.finalpayment : ClothingPaymentStatus.partial;
-
-                                  return ClothingPayment(paymentId: ClothingService().generatePaymentId(orderNumber), timestamp: pair['paymentDate'],
-                                   amount: amount,
-                                    method: pair['paymentType'],
-                                     status: status,
-                                      receiptNumber: status== ClothingPaymentStatus.finalpayment ? 'RCP-${ClothingService().generatePaymentId(orderNumber)}': null,
-                                       recorderdBy: getCurrentUser());
-                                  
+                                  return ClothingPayment(
+                                      paymentId: ClothingService()
+                                          .generatePaymentId(orderNumber),
+                                      timestamp: pair['paymentDate'],
+                                      amount: amount,
+                                      method: pair['paymentType'],
+                                      status: status,
+                                      receiptNumber: status ==
+                                              ClothingPaymentStatus.finalpayment
+                                          ? 'RCP-${ClothingService().generatePaymentId(orderNumber)}'
+                                          : null,
+                                      recorderdBy: getCurrentUser());
                                 }).toList();
-                                final double totalAmount=double.parse(_chargesController.text);
-                                final double totalPaid=payments.fold(0.0,(sum,payment)=>sum + payment.amount);
+                                final double totalAmount =
+                                    double.parse(_chargesController.text);
+                                final double totalPaid = payments.fold(0.0,
+                                    (sum, payment) => sum + payment.amount);
 
-                                final ClothesOrderStatus status=
-                                totalPaid>= totalAmount ? ClothesOrderStatus.paid :totalPaid>0 ? ClothesOrderStatus.partial : ClothesOrderStatus.pending;  
+                                final ClothesOrderStatus status =
+                                    totalPaid >= totalAmount
+                                        ? ClothesOrderStatus.paid
+                                        : totalPaid > 0
+                                            ? ClothesOrderStatus.partial
+                                            : ClothesOrderStatus.pending;
 
-                                final ClothingOrder order=ClothingOrder(
+                                final ClothingOrder order = ClothingOrder(
                                   orderName: orderNumber,
-                                 customerName: _namecontroller.text,
-                                 createdAt: DateTime.now(),
-                                  phoneNumber: _phoneNumbercontroller.text, 
+                                  customerName: _namecontroller.text,
+                                  createdAt: DateTime.now(),
+                                  phoneNumber: _phoneNumbercontroller.text,
                                   email: emailController.text,
-                                  materialOwner: materialOwner ? 'Customer' : 'Shop',
-                                   
-                                    part: measurementPairs.map((pair)=>pair['part']!.text).join(','),
-                                     measurement: measurementPairs.map((pair)=>pair['measurement']!.text).join(','),
-                                    notes: _commentsController.text, 
-                                    totalAmount: double.parse(_chargesController.text), payments: payments, status: status,
-                                     createdBy: getCurrentUser(),
-                                     imageUrl: '',
-                                      fulfillmentDate: DateTime.now().add(const Duration(days: 7)),
-                                      
-                                    
-                                     );
-                                     await ClothingService().saveClothingOrder(order);
+                                  materialOwner:
+                                      materialOwner ? 'Customer' : 'Shop',
+                                  part: measurementPairs
+                                      .map((pair) => pair['part']!.text)
+                                      .join(','),
+                                  measurement: measurementPairs
+                                      .map((pair) => pair['measurement']!.text)
+                                      .join(','),
+                                  notes: _commentsController.text,
+                                  totalAmount:
+                                      double.parse(_chargesController.text),
+                                  payments: payments,
+                                  status: status,
+                                  createdBy: getCurrentUser(),
+                                  imageUrl: '',
+                                  fulfillmentDate: DateTime.now()
+                                      .add(const Duration(days: 7)),
+                                );
+                                await ClothingService()
+                                    .saveClothingOrder(order);
 
-                                     await _loadClothingItems();
+                                await _loadClothingItems();
 
-                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Clothing Order Saved successfully')));
-                                      Navigator.pop(context);
-                              } catch(e){
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error Saving Clothing Order')));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Clothing Order Saved successfully')));
+                                Navigator.pop(context);
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Error Saving Clothing Order')));
                               }
-                            }},
+                            }
+                          },
                           child: const Text(
                             'Save',
                             style: TextStyle(color: Colors.green),
@@ -517,7 +552,8 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         });
   }
-    String getCurrentUser() {
+
+  String getCurrentUser() {
     return 'current_user_id';
   }
 
@@ -1197,22 +1233,26 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget buildCurtainItemCard(CurtainItem curtainItem) {
-    double totalDeposited = curtainItem.curtainPaymentEntries
-        .map((entry) => double.parse(entry.deposit))
+  Widget buildCurtainItemCard(CurtainOrder curtainItem) {
+    double totalDeposited = curtainItem.payments
+        .map((entry) => double.parse((entry.amount).toStringAsFixed(2)))
         .fold(0, (a, b) => a + b);
 
-    double originalCharges = double.parse(curtainItem.charges);
+    double originalCharges =
+        double.parse((curtainItem.totalAmount).toStringAsFixed(2));
     double remainingBalance = originalCharges - totalDeposited;
     return Card(
       child: ExpansionTile(
         title: Flexible(
             child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(curtainItem.name), Text("Curtains")],
+          children: [Text(curtainItem.customerName), Text("Curtains")],
         )),
         subtitle: Text('Phone Number: ${curtainItem.phoneNumber}'),
         children: [
+          ListTile(
+            title: Text("Order Number: ${curtainItem.orderNumber}"),
+          ),
           ListTile(
             title: Text(
                 'Material Owner: ${curtainItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
@@ -1263,29 +1303,26 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           ListTile(
-            title: Text('Charges: ${curtainItem.charges}'),
+            title: Text('Charges: ${curtainItem.totalAmount}'),
           ),
           ListTile(
             title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
           ),
-          ListTile(
-            title: Text(
-                'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}'),
-          ),
+          _buildBalanceInfoCurtains(curtainItem),
           ExpansionTile(
-            title: Text(
-                "Payment History(${curtainItem.curtainPaymentEntries.length} entries)"),
-            children: curtainItem.curtainPaymentEntries
+            title:
+                Text("Payment History(${curtainItem.payments.length} entries)"),
+            children: curtainItem.payments
                 .map((entry) => ListTile(
-                      title: Text("Deposit: ${entry.deposit}"),
+                      title: Text("Deposit: ${entry.amount}"),
                       subtitle: Text(
-                          "Type: ${entry.paymentMethod}, Date: ${DateFormat('yyyy-MM-dd').format(entry.paymentDate)}"),
+                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.timestamp)}, Payment ID: ${entry.paymentId}"),
                     ))
                 .toList(),
           ),
           ListTile(
             title: Text(
-                'Pick Up Date: ${curtainItem.pickUpDate?.toIso8601String() ?? 'Not Scheduled'}'),
+                'Pick Up Date: ${curtainItem.fulfillmentDate?.toIso8601String() ?? 'Not Scheduled'}'),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1307,23 +1344,24 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _sendPickUpNotificationCurtain(CurtainItem clothingItem) async {
+  void _sendPickUpNotificationCurtain(CurtainOrder clothingItem) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Pickup notification sent to ${clothingItem.name}")));
+          content: Text(
+              "Pickup notification sent to ${clothingItem.customerName}")));
     } catch (e) {
       print('Notification error: $e');
     }
   }
 
-  void _showUpdateCurtainPaymentDialog(CurtainItem curtainItem) async {
+  void _showUpdateCurtainPaymentDialog(CurtainOrder curtainItem) async {
     final depositController = TextEditingController();
     final paymentTypeController = TextEditingController(text: "Cash");
     await showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Update Payment for ${curtainItem.name}"),
+            title: Text("Update Payment for ${curtainItem.customerName}"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1369,27 +1407,93 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  void _processCurtainPayment(
-      CurtainItem curtainItem, String depositAmount, String paymentType) async {
-    CurtainpaymentEntry newPayment = CurtainpaymentEntry(
-      deposit: depositAmount,
-      balance: (double.parse(curtainItem.charges) -
-              (curtainItem.curtainPaymentEntries
-                      .fold(0, (sum, entry) => sum + int.parse(entry.deposit)) +
-                  double.parse(depositAmount)))
-          .toString(),
-      paymentDate: DateTime.now(),
-      paymentMethod: paymentType,
-    );
+  void _processCurtainPayment(CurtainOrder curtainItem, String depositAmount,
+      String paymentType) async {
+    try {
+      final double amount = double.parse(depositAmount);
+      final double newTotalPaid = curtainItem.totalPaid + amount;
 
-    curtainItem.curtainPaymentEntries.add(newPayment);
-    CurtainManager.saveCurtainItem(curtainItems);
-    setState(() {
-      _loadCurtainItems();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Payment of $depositAmount processed'),
-    ));
+      final CurtainPaymentStatus paymentStatus =
+          _determinePaymentStatusCurtains(
+              totalAmount: curtainItem.totalAmount,
+              currentlyPaid: curtainItem.totalPaid,
+              newPaymentAmount: amount);
+
+      final String paymentId =
+          CurtainService().generatePaymentsId(curtainItem.orderNumber);
+      final String? receiptNumber =
+          paymentStatus == CurtainPaymentStatus.finalpayment
+              ? 'RCP-$paymentId'
+              : null;
+
+      final CurtainPayment newPayment = CurtainPayment(
+          amount: amount,
+          timestamp: DateTime.now(),
+          method: paymentType,
+          paymentId: paymentId,
+          status: paymentStatus,
+          recordedBy: curtainItem.createdBy,
+          receiptNumber: receiptNumber);
+      final updatePayments = [...curtainItem.payments, newPayment];
+
+      final CurtainOrderStatus newStatus = _determineOrderStatusCurtains(
+          totalAmount: curtainItem.totalAmount, totalPaid: newTotalPaid);
+
+      final updateOrder = CurtainOrder(
+          orderNumber: curtainItem.orderNumber,
+          createdAt: curtainItem.createdAt,
+          customerName: curtainItem.customerName,
+          phoneNumber: curtainItem.phoneNumber,
+          materialOwner: curtainItem.materialOwner,
+          curtainType: curtainItem.curtainType,
+          notes: curtainItem.notes,
+          part: curtainItem.part,
+          measurement: curtainItem.measurement,
+          totalAmount: curtainItem.totalAmount,
+          payments: updatePayments,
+          createdBy: curtainItem.createdBy,
+          fulfillmentDate: curtainItem.fulfillmentDate);
+      await CurtainService().saveCurtainOrder(updateOrder);
+      setState(() {
+        _loadCurtainItems();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Payment of $depositAmount processed succesffully')));
+    } catch (e) {
+      print("Error Processing payment: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error Processing payment")));
+    }
+  }
+
+  CurtainPaymentStatus _determinePaymentStatusCurtains({
+    required double totalAmount,
+    required double currentlyPaid,
+    required double newPaymentAmount,
+  }) {
+    final double totalAfterPayment = currentlyPaid + newPaymentAmount;
+
+    if (currentlyPaid == 0) {
+      return CurtainPaymentStatus.deposit;
+    } else if (totalAfterPayment >= totalAmount) {
+      return CurtainPaymentStatus.finalpayment;
+    } else {
+      return CurtainPaymentStatus.partial;
+    }
+  }
+
+  CurtainOrderStatus _determineOrderStatusCurtains({
+    required double totalAmount,
+    required double totalPaid,
+  }) {
+    if (totalPaid >= totalAmount) {
+      return CurtainOrderStatus.paid;
+    } else if (totalPaid > 0) {
+      return CurtainOrderStatus.partial;
+    } else {
+      return CurtainOrderStatus.pending;
+    }
   }
 
   Widget buildClothingItemCard(ClothingOrder clothingItem) {
@@ -1409,6 +1513,9 @@ class _MyHomePageState extends State<MyHomePage> {
         )),
         subtitle: Text('Phone Number: ${clothingItem.phoneNumber}'),
         children: [
+          ListTile(
+            title: Text("OrderNumber: ${clothingItem.orderName}"),
+          ),
           ListTile(
             title: Text(
                 'Material Owner: ${clothingItem.materialOwner == true ? 'Customer Material' : 'Tailor Material'}'),
@@ -1461,10 +1568,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ListTile(
             title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
           ),
-          ListTile(
-            title: Text(
-                'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}'),
-          ),
+          _buildBalanceInfoClothing(clothingItem),
           ExpansionTile(
             title: Text(
                 "Payment History(${clothingItem.payments.length} entries)"),
@@ -1472,7 +1576,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 .map((entry) => ListTile(
                       title: Text("Deposit: ${entry.amount}"),
                       subtitle: Text(
-                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.timestamp)}"),
+                          "Type: ${entry.method}, Date: ${DateFormat('yyyy-MM-dd').format(entry.timestamp)}, PamentId: ${entry.paymentId}"),
                     ))
                 .toList(),
           ),
@@ -1597,26 +1701,248 @@ class _MyHomePageState extends State<MyHomePage> {
           customerName: clothingItem.customerName,
           phoneNumber: clothingItem.phoneNumber,
           materialOwner: clothingItem.materialOwner,
-           
           imageUrl: clothingItem.imageUrl,
           notes: clothingItem.notes,
           part: clothingItem.part,
           measurement: clothingItem.measurement,
           totalAmount: clothingItem.totalAmount,
-          payments: clothingItem.payments,
+          payments: updatePayment,
           fulfillmentDate: clothingItem.fulfillmentDate,
           createdBy: clothingItem.createdBy);
       await ClothingService().saveClothingOrder(updateOrder);
       setState(() {
         _loadClothingItems();
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Payment of $depositAmount processed successfully")));
+
+      String SuccessMessage =
+          'Payment of $depositAmount processed successfully';
+      if (paymentStatus == ClothingPaymentStatus.finalpayment) {
+        SuccessMessage = "Final payment processed.Receipt#: ${receiptNumber}";
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(SuccessMessage)));
     } catch (e) {
       print('Error processing payment: $e');
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error processing payment: $e")));
     }
+  }
+
+////////////////////////////////////////
+  Widget _buildBalanceInfoCurtains(CurtainOrder order) {
+    final double remainingBalance = order.remainingBalance;
+    final bool isFullyPaid = order.isFullyPaid;
+
+    // Find the last payment that has a receipt number (if any)
+    final receiptPayment = order.payments.lastWhere(
+        (payment) => payment.receiptNumber != null,
+        orElse: () => CurtainPayment(
+            amount: 0,
+            timestamp: DateTime.now(),
+            method: '',
+            paymentId: '',
+            status: CurtainPaymentStatus.partial,
+            recordedBy: '',
+            receiptNumber: null));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          title: Text(
+            'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isFullyPaid ? Colors.green : Colors.red,
+            ),
+          ),
+          subtitle: isFullyPaid
+              ? Text(
+                  'FULLY PAID',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+          trailing: isFullyPaid && receiptPayment != null
+              ? Chip(
+                  label: Text('Receipt: ${receiptPayment.receiptNumber}'),
+                  backgroundColor: Colors.green.shade100,
+                )
+              : null,
+        ),
+        if (isFullyPaid && receiptPayment != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.receipt_long),
+              label: Text('View Receipt'),
+              onPressed: () {
+                _showReceiptDialog(order, receiptPayment);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showReceiptDialog(CurtainOrder order, CurtainPayment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Payment Receipt'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Receipt Number: ${payment.receiptNumber}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Divider(),
+              Text('Customer: ${order.customerName}'),
+              Text('Order Number: ${order.orderNumber}'),
+              Text(
+                  'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
+              Text('Payment Method: ${payment.method}'),
+              Divider(),
+              Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 20),
+              Text('Thank you for your business!',
+                  style: TextStyle(fontStyle: FontStyle.italic)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+          ElevatedButton.icon(
+            icon: Icon(Icons.print),
+            label: Text('Print'),
+            onPressed: () {
+              // Implement printing functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Printing not implemented yet')));
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  ///////////////////////////////////////////////////////////
+
+  Widget _buildBalanceInfoClothing(ClothingOrder order) {
+    final double remainingBalance = order.remainingBalance;
+    final bool isFullyPaid = order.isFullyPaid;
+
+    // Find the last payment that has a receipt number (if any)
+    final receiptPayment = order.payments.lastWhere(
+        (payment) => payment.receiptNumber != null,
+        orElse: () => ClothingPayment(
+            amount: 0,
+            timestamp: DateTime.now(),
+            method: '',
+            paymentId: '',
+            status: ClothingPaymentStatus.partial,
+            recorderdBy: '',
+            receiptNumber: null));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          title: Text(
+            'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isFullyPaid ? Colors.green : Colors.red,
+            ),
+          ),
+          subtitle: isFullyPaid
+              ? Text(
+                  'FULLY PAID',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+          trailing: isFullyPaid && receiptPayment != null
+              ? Chip(
+                  label: Text('Receipt: ${receiptPayment.receiptNumber}'),
+                  backgroundColor: Colors.green.shade100,
+                )
+              : null,
+        ),
+        if (isFullyPaid && receiptPayment != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.receipt_long),
+              label: Text('View Receipt'),
+              onPressed: () {
+                _showReceiptDialogClothing(order, receiptPayment);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showReceiptDialogClothing(
+      ClothingOrder order, ClothingPayment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Payment Receipt'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Receipt Number: ${payment.receiptNumber}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Divider(),
+              Text('Customer: ${order.customerName}'),
+              Text('Order Number: ${order.orderName}'),
+              Text(
+                  'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
+              Text('Payment Method: ${payment.method}'),
+              Divider(),
+              Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 20),
+              Text('Thank you for your business!',
+                  style: TextStyle(fontStyle: FontStyle.italic)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+          ElevatedButton.icon(
+            icon: Icon(Icons.print),
+            label: Text('Print'),
+            onPressed: () {
+              // Implement printing functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Printing not implemented yet')));
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   ClothingPaymentStatus _determinePaymentStatus(
@@ -1631,7 +1957,6 @@ class _MyHomePageState extends State<MyHomePage> {
     } else {
       return ClothingPaymentStatus.partial;
     }
-  
   }
 
   Future<void> _uniformSales() async {

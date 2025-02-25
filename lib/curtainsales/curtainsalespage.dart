@@ -38,7 +38,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           const SnackBar(content: Text("Error Loading Curtain Items")));
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,10 +140,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           ListTile(
             title: Text('Deposit Paid: ${totalDeposited.toStringAsFixed(2)}'),
           ),
-          ListTile(
-            title: Text(
-                'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}'),
-          ),
+          _buildBalanceInfoCurtains(curtainOrder),
           ExpansionTile(
             title: Text(
                 "Payment History(${curtainOrder.payments.length} entries)"),
@@ -285,7 +282,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           part: curtainOrder.part,
           measurement: curtainOrder.measurement,
           totalAmount: curtainOrder.totalAmount,
-          payments: curtainOrder.payments,
+          payments: updatePayments,
           createdBy: curtainOrder.createdBy,
           fulfillmentDate: curtainOrder.fulfillmentDate);
       await _curtainService.saveCurtainOrder(updateOrder);
@@ -300,6 +297,113 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Error Processing payment")));
     }
+  }
+
+  Widget _buildBalanceInfoCurtains(CurtainOrder order) {
+    final double remainingBalance = order.remainingBalance;
+    final bool isFullyPaid = order.isFullyPaid;
+
+    // Find the last payment that has a receipt number (if any)
+    final receiptPayment = order.payments.lastWhere(
+        (payment) => payment.receiptNumber != null,
+        orElse: () => CurtainPayment(
+            amount: 0,
+            timestamp: DateTime.now(),
+            method: '',
+            paymentId: '',
+            status: CurtainPaymentStatus.partial,
+            recordedBy: '',
+            receiptNumber: null));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          title: Text(
+            'Remaining Balance: ${remainingBalance.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isFullyPaid ? Colors.green : Colors.red,
+            ),
+          ),
+          subtitle: isFullyPaid
+              ? Text(
+                  'FULLY PAID',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+          trailing: isFullyPaid && receiptPayment != null
+              ? Chip(
+                  label: Text('Receipt: ${receiptPayment.receiptNumber}'),
+                  backgroundColor: Colors.green.shade100,
+                )
+              : null,
+        ),
+        if (isFullyPaid && receiptPayment != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.receipt_long),
+              label: Text('View Receipt'),
+              onPressed: () {
+                _showReceiptDialog(order, receiptPayment);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showReceiptDialog(CurtainOrder order, CurtainPayment payment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Payment Receipt'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Receipt Number: ${payment.receiptNumber}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Divider(),
+              Text('Customer: ${order.customerName}'),
+              Text('Order Number: ${order.orderNumber}'),
+              Text(
+                  'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
+              Text('Payment Method: ${payment.method}'),
+              Divider(),
+              Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 20),
+              Text('Thank you for your business!',
+                  style: TextStyle(fontStyle: FontStyle.italic)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+          ElevatedButton.icon(
+            icon: Icon(Icons.print),
+            label: Text('Print'),
+            onPressed: () {
+              // Implement printing functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Printing not implemented yet')));
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   CurtainPaymentStatus _determinePaymentStatus({
