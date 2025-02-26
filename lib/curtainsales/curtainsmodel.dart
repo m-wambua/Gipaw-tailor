@@ -51,7 +51,7 @@ class CurtainOrder {
   final String phoneNumber;
   final String materialOwner;
   final String curtainType;
-  final String? imageUrl;
+  final List<String?> imageUrls;
   final String notes;
   final String part;
   final String measurement;
@@ -68,7 +68,7 @@ class CurtainOrder {
     required this.phoneNumber,
     required this.materialOwner,
     required this.curtainType,
-    this.imageUrl,
+    this.imageUrls= const[],
     required this.notes,
     required this.part,
     required this.measurement,
@@ -91,7 +91,7 @@ class CurtainOrder {
         'phoneNumber': phoneNumber,
         'materialOwner': materialOwner,
         'curtainType': curtainType,
-        'imageUrl': imageUrl,
+        'imageUrl': imageUrls,
         'notes': notes,
         'part': part,
         'measurement': measurement,
@@ -108,7 +108,9 @@ class CurtainOrder {
         phoneNumber: json['phoneNumber'],
         materialOwner: json['materialOwner'],
         curtainType: json['curtainType'],
-        imageUrl: json['imageUrl'],
+          imageUrls: json.containsKey('imageUrls') 
+        ? (json['imageUrls'] as List).map((url) => url as String).toList()
+        : json['imageUrl'] != null ? [json['imageUrl'] as String] : [],
         notes: json['notes'],
         part: json['part'],
         measurement: json['measurement'],

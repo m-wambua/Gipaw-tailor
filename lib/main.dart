@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/homepage.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
@@ -12,6 +13,7 @@ const String IS_FIRST_RUN_KEY = 'is_first_run';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
 
   // Check if it's the first run
   final prefs = await SharedPreferences.getInstance();

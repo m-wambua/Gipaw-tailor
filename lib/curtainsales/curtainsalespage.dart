@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class Curtainsalespage extends StatefulWidget {
@@ -17,6 +21,23 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   final _curtainService = CurtainService();
   List<CurtainItem> curtainItems = [];
   List<CurtainOrder> curtainOrders = [];
+  CurtainOrder currentOrder = CurtainOrder(
+    orderNumber: '',
+    createdAt: DateTime.now(),
+    customerName: '',
+    phoneNumber: '',
+    materialOwner: '',
+    curtainType: '',
+    imageUrls: [],
+    notes: '',
+    part: '',
+    measurement: '',
+    totalAmount: 0.0,
+    payments: [],
+    status: CurtainOrderStatus.pending,
+    fulfillmentDate: null,
+    createdBy: '',
+  );
   @override
   void initState() {
     super.initState();
@@ -981,45 +1002,337 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     return 'current_user_id';
   }
 
-  Future<void> _addSample() async {
+  Future _addSample() async {
+    List<String> selectedImageUrls = [];
+
+    // If we already have images, initialize with existing ones
+    if (currentOrder.imageUrls.isNotEmpty) {
+      selectedImageUrls = List.from(currentOrder.imageUrls);
+    }
+
     showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Add sample'),
-            content: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Take a photo'),
-                IconButton(onPressed: () {}, icon: const Icon(Icons.photo))
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add samples'),
+          content: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Take photo option
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take a photo'),
+                onTap: () async {
+                  // Close dialog first
+                  Navigator.pop(context);
+                },
+              ),
+
+              // Gallery option
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from gallery'),
+                onTap: () async {
+                  // Close dialog first
+                  Navigator.pop(context);
+                },
+              ),
+
+              // Social media link option
+              ListTile(
+                leading: const Icon(Icons.link),
+                title: const Text('Add social media link'),
+                onTap: () {
+                  // Close current dialog
+                  Navigator.pop(context);
+
+                  // Show dialog to enter link
+                },
+              ),
+
+              // Show current images if any
+              if (selectedImageUrls.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Current images:'),
+                const SizedBox(height: 8),
+                Container(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: selectedImageUrls.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 100,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                                image: DecorationImage(
+                                  image: NetworkImage(selectedImageUrls[index]),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    selectedImageUrls.removeAt(index);
+                                  });
+                                  Navigator.pop(context);
+                                  _showImagesConfirmationDialog(
+                                      selectedImageUrls);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
-            ),
-            actions: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.red),
-                      )),
-                  ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(color: Colors.green),
-                      ))
-                ],
-              )
             ],
-          );
-        });
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Save all selected images to the current order
+                setState(() {
+                  currentOrder = CurtainOrder(
+                    // Copy all existing fields
+                    orderNumber: currentOrder.orderNumber,
+                    createdAt: currentOrder.createdAt,
+                    customerName: currentOrder.customerName,
+                    phoneNumber: currentOrder.phoneNumber,
+                    materialOwner: currentOrder.materialOwner,
+                    curtainType: currentOrder.curtainType,
+                    imageUrls: selectedImageUrls, // Update with new list
+                    notes: currentOrder.notes,
+                    part: currentOrder.part,
+                    measurement: currentOrder.measurement,
+                    totalAmount: currentOrder.totalAmount,
+                    payments: currentOrder.payments,
+                    status: currentOrder.status,
+                    fulfillmentDate: currentOrder.fulfillmentDate,
+                    createdBy: currentOrder.createdBy,
+                  );
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Save All'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Helper function to show loading dialog
+  void _showLoadingDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text(message),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+// Helper function to upload image to storage
+  Future<String?> _uploadImageToStorage(File imageFile) async {
+    try {
+      // Generate a unique filename
+      String fileName = 'sample_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Reference to storage location
+      Reference storageRef =
+          FirebaseStorage.instance.ref().child('samples/$fileName');
+
+      // Upload file
+      await storageRef.putFile(imageFile);
+
+      // Get download URL
+      String downloadUrl = await storageRef.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+      return null;
+    }
+  }
+
+// Helper function to show confirmation dialog with multiple images
+  void _showImagesConfirmationDialog(List<String> imageUrls) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sample Images'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: imageUrls.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Container(
+                        width: 160,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: NetworkImage(imageUrls[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Would you like to add more samples or save these?'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _addSample(); // Go back to add more
+              },
+              child: const Text('Add More'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Save the image URLs to your CurtainOrder
+                setState(() {
+                  currentOrder = CurtainOrder(
+                    // Copy all existing fields
+                    orderNumber: currentOrder.orderNumber,
+                    createdAt: currentOrder.createdAt,
+                    customerName: currentOrder.customerName,
+                    phoneNumber: currentOrder.phoneNumber,
+                    materialOwner: currentOrder.materialOwner,
+                    curtainType: currentOrder.curtainType,
+                    imageUrls: imageUrls, // Update with new list
+                    notes: currentOrder.notes,
+                    part: currentOrder.part,
+                    measurement: currentOrder.measurement,
+                    totalAmount: currentOrder.totalAmount,
+                    payments: currentOrder.payments,
+                    status: currentOrder.status,
+                    fulfillmentDate: currentOrder.fulfillmentDate,
+                    createdBy: currentOrder.createdBy,
+                  );
+                });
+                Navigator.pop(context);
+              },
+              child:
+                  const Text('Save All', style: TextStyle(color: Colors.green)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Helper function to show dialog for entering a social media link
+  void _showLinkInputDialog(List<String> currentImageUrls) {
+    String? link;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter social media link'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Paste link here',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  link = value;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _addSample(); // Go back to main add sample dialog
+              },
+              child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () {
+                if (link != null && link!.isNotEmpty) {
+                  // Validate the link (you might want to add more validation)
+                  if (Uri.tryParse(link!)?.hasAbsolutePath ?? false) {
+                    Navigator.pop(context);
+
+                    // Add the link to current list of image URLs
+                    List<String> updatedUrls = List.from(currentImageUrls);
+                    updatedUrls.add(link!);
+
+                    // Show confirmation dialog with all images/links
+                    _showImagesConfirmationDialog(updatedUrls);
+                  } else {
+                    // Show error for invalid link
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid URL')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Add', style: TextStyle(color: Colors.green)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _schedulePickUp() async {

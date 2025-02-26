@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:gipaw_tailor/cameraandgallerytest/camereandgallerytest.dart';
 import 'package:gipaw_tailor/clothesentrymodel/clothingandrepairsales.dart';
 import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/contacts/contactspage.dart';
@@ -1101,7 +1102,14 @@ class _MyHomePageState extends State<MyHomePage> {
                           context,
                           MaterialPageRoute(
                               builder: (context) => AdminDashBoard()))),
-                  LogoutButton()
+                  LogoutButton(),
+                  TextButton(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ImageCaptureScreen())),
+                      child: Text("Image Capture"))
+
                   /*                
                   TextButton(
                     onPressed: () {
