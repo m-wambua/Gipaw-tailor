@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class Curtainsalespage extends StatefulWidget {
-  const Curtainsalespage({Key? key}) : super(key: key);
+  const Curtainsalespage({super.key});
   @override
   _CurtainsalespageState createState() => _CurtainsalespageState();
 }
@@ -64,7 +64,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Curtain Sales"),
+        title: const Text("Curtain Sales"),
       ),
       body: Column(
         children: [
@@ -121,14 +121,14 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Measurements:',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black87),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 ...curtainOrder.part.split(',').asMap().entries.map((entry) {
                   int index = entry.key;
                   String part = entry.value.trim();
@@ -140,18 +140,18 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                       children: [
                         Text(
                           '$part: ',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Colors.black87),
                         ),
                         Text(
                           measurement,
-                          style: TextStyle(color: Colors.black54),
+                          style: const TextStyle(color: Colors.black54),
                         ),
                       ],
                     ),
                   );
-                }).toList()
+                })
               ],
             ),
           ),
@@ -184,12 +184,12 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                   onPressed: () {
                     _sendPickUpNotification(curtainOrder);
                   },
-                  child: Text('Ready for pickup')),
+                  child: const Text('Ready for pickup')),
               ElevatedButton(
                   onPressed: () {
                     _showUpdatePaymentDialog(curtainOrder);
                   },
-                  child: Text('Update Payment'))
+                  child: const Text('Update Payment'))
             ],
           )
         ],
@@ -220,18 +220,18 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
               children: [
                 TextFormField(
                   controller: depositController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                       labelText: "Deposit",
                       hintText: "Enter Deposit amount",
                       border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 10,
                 ),
                 DropdownButtonFormField<String>(
                   value: paymentTypeController.text,
-                  decoration: InputDecoration(labelText: "Payment Type"),
+                  decoration: const InputDecoration(labelText: "Payment Type"),
                   items: ["Cash", "Card", "Bank Transfer", "Mpesa"].map((type) {
                     return DropdownMenuItem(
                       value: type,
@@ -247,14 +247,14 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel')),
+                  child: const Text('Cancel')),
               ElevatedButton(
                   onPressed: () {
                     _processPayment(curtainOrder, depositController.text,
                         paymentTypeController.text);
                     Navigator.of(context).pop();
                   },
-                  child: Text("Add Payment"))
+                  child: const Text("Add Payment"))
             ],
           );
         });
@@ -348,7 +348,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             ),
           ),
           subtitle: isFullyPaid
-              ? Text(
+              ? const Text(
                   'FULLY PAID',
                   style: TextStyle(
                     color: Colors.green,
@@ -356,19 +356,19 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                   ),
                 )
               : null,
-          trailing: isFullyPaid && receiptPayment != null
+          trailing: isFullyPaid
               ? Chip(
                   label: Text('Receipt: ${receiptPayment.receiptNumber}'),
                   backgroundColor: Colors.green.shade100,
                 )
               : null,
         ),
-        if (isFullyPaid && receiptPayment != null)
+        if (isFullyPaid)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ElevatedButton.icon(
-              icon: Icon(Icons.receipt_long),
-              label: Text('View Receipt'),
+              icon: const Icon(Icons.receipt_long),
+              label: const Text('View Receipt'),
               onPressed: () {
                 _showReceiptDialog(order, receiptPayment);
               },
@@ -382,27 +382,27 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Payment Receipt'),
+        title: const Text('Payment Receipt'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Receipt Number: ${payment.receiptNumber}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              Divider(),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Divider(),
               Text('Customer: ${order.customerName}'),
               Text('Order Number: ${order.orderNumber}'),
               Text(
                   'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
               Text('Payment Method: ${payment.method}'),
-              Divider(),
+              const Divider(),
               Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              Text('Thank you for your business!',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              const Text('Thank you for your business!',
                   style: TextStyle(fontStyle: FontStyle.italic)),
             ],
           ),
@@ -410,15 +410,15 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
           ElevatedButton.icon(
-            icon: Icon(Icons.print),
-            label: Text('Print'),
+            icon: const Icon(Icons.print),
+            label: const Text('Print'),
             onPressed: () {
               // Implement printing functionality
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Printing not implemented yet')));
+                  const SnackBar(content: Text('Printing not implemented yet')));
               Navigator.pop(context);
             },
           ),
@@ -515,14 +515,14 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             return AlertDialog(
               scrollable: true,
               title: const Text("New Curtain"),
-              content: Container(
+              content: SizedBox(
                 width: double.infinity,
                 child: Form(
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: Row(
                           children: [
@@ -559,7 +559,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                             labelText: "Email", border: OutlineInputBorder()),
                       ),
                       const SizedBox(height: 5),
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -649,7 +649,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                           );
                         }).toList(),
                       ),
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -682,7 +682,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                         controller: _measurementsController,
                         decoration: InputDecoration(
                             labelText: 'Additional Notes',
-                            border: OutlineInputBorder(),
+                            border: const OutlineInputBorder(),
                             suffixIcon: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -698,7 +698,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                                     icon: const Icon(Icons.camera_alt)),
                                 IconButton(
                                     onPressed: () {},
-                                    icon: Icon(Icons.attach_file))
+                                    icon: const Icon(Icons.attach_file))
                               ],
                             )),
                       ),
@@ -822,7 +822,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                           );
                         }).toList(),
                       ),
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -862,7 +862,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 ),
               ),
               actions: [
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1056,7 +1056,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 const SizedBox(height: 16),
                 const Text('Current images:'),
                 const SizedBox(height: 8),
-                Container(
+                SizedBox(
                   height: 120,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
@@ -1094,7 +1094,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                                     color: Colors.red,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(
+                                  child: const Icon(
                                     Icons.close,
                                     color: Colors.white,
                                     size: 16,
@@ -1160,8 +1160,8 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
         return AlertDialog(
           content: Row(
             children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
               Text(message),
             ],
           ),
@@ -1206,7 +1206,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              SizedBox(
                 height: 200,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,

@@ -87,12 +87,11 @@ class _SalesSummaryState extends State<SalesSummary> {
                     onPressed: () => _selectDateRange(context),
                     child: const Text('Select Date Range'),
                   ),
-                  if (_selectDateRange != null)
-                    TextButton(
-                      onPressed: () =>
-                          setState(() => _selectedDateRange = null),
-                      child: const Text('Clear'),
-                    ),
+                  TextButton(
+                    onPressed: () =>
+                        setState(() => _selectedDateRange = null),
+                    child: const Text('Clear'),
+                  ),
                 ],
               )
             ])));

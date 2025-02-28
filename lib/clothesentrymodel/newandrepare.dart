@@ -197,7 +197,7 @@ class ClothingService {
       }
       final result = await prefs.setStringList(_storageKey, orders);
       print(
-        'Order saved successfully: ${result},total orders: ${orders.length}',
+        'Order saved successfully: $result,total orders: ${orders.length}',
       );
       return result;
     } catch (e) {

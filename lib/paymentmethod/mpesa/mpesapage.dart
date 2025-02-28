@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class MpesaPaymentScreen extends StatefulWidget {
-  const MpesaPaymentScreen({Key? key}) : super(key: key);
+  const MpesaPaymentScreen({super.key});
   @override
   _MpesaPaymentScreenState createState() => _MpesaPaymentScreenState();
 }
@@ -59,7 +59,7 @@ class _MpesaPaymentScreenState extends State<MpesaPaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('M-Pesa Payment'),
+        title: const Text('M-Pesa Payment'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -134,7 +134,7 @@ class _MpesaPaymentScreenState extends State<MpesaPaymentScreen> {
                                 strokeWidth: 2,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Text("Processing...."),
                           ],
                         )

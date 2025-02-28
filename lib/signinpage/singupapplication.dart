@@ -21,23 +21,18 @@ class SignUpApplication {
 class UserDetails extends User {
   final DateTime createdAt;
   final DateTime lastLogin;
+  @override
   final bool isActive;
 
   UserDetails({
-    required String id,
-    String? username,
-    String? email,
-    String? phoneNumber,
-    required UserRole role,
-    required String password,
+    required super.id,
+    super.username,
+    super.email,
+    super.phoneNumber,
+    required UserRole super.role,
+    required String super.password,
     required this.createdAt,
     required this.lastLogin,
     this.isActive = true,
-  }) : super(
-            id: id,
-            username: username,
-            email: email,
-            phoneNumber: phoneNumber,
-            role: role,
-            password: password);
+  });
 }

@@ -41,13 +41,15 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: isFirstRun ? AdminSetupPage() : SignInPage(),
+        home: isFirstRun ? AdminSetupPage() : const SignInPage(),
       ),
     );
   }
 }
 
 class AdminSetupPage extends StatefulWidget {
+  const AdminSetupPage({super.key});
+
   @override
   _AdminSetupPageState createState() => _AdminSetupPageState();
 }
@@ -63,11 +65,11 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Initial Admin Setup'),
+        title: const Text('Initial Admin Setup'),
         automaticallyImplyLeading: false,
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -78,10 +80,10 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 32),
+              const SizedBox(height: 32),
               TextFormField(
                 controller: _usernameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Admin Username',
                   border: OutlineInputBorder(),
                 ),
@@ -95,10 +97,10 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Admin Password',
                   border: OutlineInputBorder(),
                 ),
@@ -113,10 +115,10 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _confirmPasswordController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Confirm Password',
                   border: OutlineInputBorder(),
                 ),
@@ -128,17 +130,17 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 32),
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _setupAdmin,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                   child: _isLoading
                       ? CircularProgressIndicator()
                       : Text('Complete Setup'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                  ),
                 ),
               ),
             ],
@@ -170,11 +172,11 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
 
       // Navigate to sign in page
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => SignInPage()),
+        MaterialPageRoute(builder: (context) => const SignInPage()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Error setting up admin account'),
           backgroundColor: Colors.red,
         ),

@@ -1,3 +1,3 @@
 class ApiConfig{
-   static final String baseUrl = "YOUR_API_KEY";
+   static const String baseUrl = "YOUR_API_KEY";
 }

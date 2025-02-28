@@ -154,7 +154,7 @@ class AuthProvider with ChangeNotifier {
 
         // Ensure each item in the list is a Map<String, dynamic>
         _users = jsonList
-            .where((item) => item is Map<String, dynamic>)
+            .whereType<Map<String, dynamic>>()
             .map((json) => User.fromJson(json as Map<String, dynamic>))
             .toList();
       } else {
@@ -359,7 +359,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> sendPassWordResetEmail(String email) async {
     try {
-      if (email == null || email.isEmpty || !email.contains('@')) {
+      if (email.isEmpty || !email.contains('@')) {
         throw Exception("Invalid email address");
       }
 
@@ -542,27 +542,27 @@ class AuthProvider with ChangeNotifier {
 class LogoutButton extends StatelessWidget {
   final VoidCallback? onLogoutComplete;
 
-  const LogoutButton({Key? key, this.onLogoutComplete}) : super(key: key);
+  const LogoutButton({super.key, this.onLogoutComplete});
 
   Future<void> _handleLogout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final bool? shouldLogout = await showDialog<bool>(
         context: context,
         builder: (BuildContext context) => AlertDialog(
-                title: Text('Confirm Logout'),
-                content: Text('Are you sure you want to logout?'),
+                title: const Text('Confirm Logout'),
+                content: const Text('Are you sure you want to logout?'),
                 actions: [
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop(false);
                     },
-                    child: Text('No'),
+                    child: const Text('No'),
                   ),
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
-                    child: Text('Yes'),
+                    child: const Text('Yes'),
                   )
                 ]));
 
@@ -572,18 +572,18 @@ class LogoutButton extends StatelessWidget {
       showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) => Center(
+          builder: (BuildContext context) => const Center(
                 child: CircularProgressIndicator(),
               ));
 
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
 
       Navigator.of(context).pop();
 
       Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) => SignInPage()));
+          .push(MaterialPageRoute(builder: (context) => const SignInPage()));
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Successfully loged out"),
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
@@ -599,6 +599,6 @@ class LogoutButton extends StatelessWidget {
     return IconButton(
         onPressed: () => _handleLogout(context),
         tooltip: 'Logout',
-        icon: Icon(Icons.logout));
+        icon: const Icon(Icons.logout));
   }
 }

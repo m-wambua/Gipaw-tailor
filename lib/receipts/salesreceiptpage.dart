@@ -4,6 +4,8 @@ import 'package:gipaw_tailor/receipts/receiptservice.dart';
 import 'package:intl/intl.dart';
 
 class ReceiptPage extends StatefulWidget {
+  const ReceiptPage({super.key});
+
   @override
   _ReceiptPageState createState() => _ReceiptPageState();
 }
@@ -32,7 +34,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error loading Receipts: $e')));
     }
-    ;
   }
 
   @override
@@ -41,7 +42,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
         appBar: AppBar(
           title: const Text('Receipts'),
           actions: [
-            IconButton(onPressed: _loadReceipts, icon: Icon(Icons.refresh))
+            IconButton(onPressed: _loadReceipts, icon: const Icon(Icons.refresh))
           ],
         ),
         body: _isLoading
@@ -138,10 +139,9 @@ class _ReceiptPageState extends State<ReceiptPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               ...receipt.payments.map((payment) => Text(
-                  '${payment.method} : KES${payment.amount.toStringAsFixed(2)}' +
-                      (payment.givenAmount != null
+                  '${payment.method} : KES${payment.amount.toStringAsFixed(2)}${payment.givenAmount != null
                           ? '\nChange: KES${(payment.givenAmount! - payment.amount).toStringAsFixed(2)}'
-                          : ''))),
+                          : ''}')),
               const SizedBox(
                 height: 16,
               ),

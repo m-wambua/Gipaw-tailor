@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashBoard extends StatefulWidget {
+  const AdminDashBoard({super.key});
+
   @override
   _AdminDashBoardState createState() => _AdminDashBoardState();
 }
@@ -34,22 +36,22 @@ class _AdminDashBoardState extends State<AdminDashBoard>
   @override
   Widget build(BuildContext context) {
     return ProtectedRoute(
-        allowedRoles: [UserRole.admin],
+        allowedRoles: const [UserRole.admin],
         child: Scaffold(
           appBar: AppBar(
             title: Row(
               children: [
-                Text("Admin Dashboard"),
+                const Text("Admin Dashboard"),
                 ElevatedButton(
                   onPressed: () async {
                     await Provider.of<AuthProvider>(context, listen: false)
                         .debugPrintStoredData();
                   },
-                  child: Text('Debug: Print Stored Data'),
+                  child: const Text('Debug: Print Stored Data'),
                 )
               ],
             ),
-            bottom: TabBar(controller: _tabController, tabs: [
+            bottom: TabBar(controller: _tabController, tabs: const [
               Tab(
                 text: "Pending Applications",
               ),
@@ -78,12 +80,14 @@ class _AdminDashBoardState extends State<AdminDashBoard>
 }
 
 class PendingApplicationsTab extends StatelessWidget {
+  const PendingApplicationsTab({super.key});
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final pendingApplications = authProvider.pendingApplications;
     if (pendingApplications.isEmpty) {
-      return Center(
+      return const Center(
         child: Text("No pending applications"),
       );
     }
@@ -92,7 +96,7 @@ class PendingApplicationsTab extends StatelessWidget {
         itemBuilder: (context, index) {
           final application = pendingApplications[index];
           return Card(
-            margin: EdgeInsets.all(8),
+            margin: const EdgeInsets.all(8),
             child: ListTile(
               title: Text('Application #${index + 1}'),
               subtitle: Column(
@@ -113,7 +117,7 @@ class PendingApplicationsTab extends StatelessWidget {
                       onPressed: () {
                         _showApprovalDialog(context, index, application);
                       },
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.check,
                         color: Colors.green,
                       )),
@@ -121,7 +125,7 @@ class PendingApplicationsTab extends StatelessWidget {
                       onPressed: () {
                         _showRejectionDialog(context, index, application);
                       },
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.close,
                         color: Colors.red,
                       ))
@@ -145,11 +149,11 @@ class PendingApplicationsTab extends StatelessWidget {
         context: context,
         builder: (context) => StatefulBuilder(
             builder: (context, setState) => AlertDialog(
-                  title: Text('Approve Application'),
+                  title: const Text('Approve Application'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("Select role for the new user:"),
+                      const Text("Select role for the new user:"),
                       DropdownButton<UserRole>(
                           value: selectedRole,
                           items: UserRole.values.map((role) {
@@ -170,7 +174,7 @@ class PendingApplicationsTab extends StatelessWidget {
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text('Cancel')),
+                        child: const Text('Cancel')),
                     TextButton(
                         onPressed: () {
                           final authProvider =
@@ -178,14 +182,14 @@ class PendingApplicationsTab extends StatelessWidget {
                           authProvider.approveApplication(index, selectedRole);
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
+                            const SnackBar(
                               content:
                                   Text('Application approved successfully'),
                               backgroundColor: Colors.green,
                             ),
                           );
                         },
-                        child: Text('Approve'))
+                        child: const Text('Approve'))
                   ],
                 )));
   }
@@ -197,10 +201,10 @@ class PendingApplicationsTab extends StatelessWidget {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
-              title: Text('Reject Application'),
+              title: const Text('Reject Application'),
               content: TextField(
                 controller: reasonController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Rejection Reason",
                   hintText: "Enter reason for rejection",
                 ),
@@ -209,7 +213,7 @@ class PendingApplicationsTab extends StatelessWidget {
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel')),
+                    child: const Text('Cancel')),
                 ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -217,7 +221,7 @@ class PendingApplicationsTab extends StatelessWidget {
                     onPressed: () {
                       if (reasonController.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                          const SnackBar(
                             content: Text('Please enter a rejection reason'),
                             backgroundColor: Colors.red,
                           ),
@@ -230,13 +234,13 @@ class PendingApplicationsTab extends StatelessWidget {
                           index, reasonController.text.trim());
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content: Text('Application rejected'),
                           backgroundColor: Colors.red,
                         ),
                       );
                     },
-                    child: Text("Reject"))
+                    child: const Text("Reject"))
               ],
             ));
   }
@@ -244,6 +248,8 @@ class PendingApplicationsTab extends StatelessWidget {
 
 class ActiveUsersTab extends StatelessWidget {
   final _searchController = TextEditingController();
+
+  ActiveUsersTab({super.key});
 
   // Helper method to check if a user is currently active
   bool isUserActive(String username, List<UserActivity> activities) {
@@ -265,7 +271,7 @@ class ActiveUsersTab extends StatelessWidget {
     final uniqueUsers = activities
         .map((activity) => activity.username)
         .toSet()
-        .where((username) => isUserActive(username!, activities))
+        .where((username) => isUserActive(username, activities))
         .toList();
     return uniqueUsers;
   }
@@ -279,10 +285,10 @@ class ActiveUsersTab extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           child: TextField(
             controller: _searchController,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Search Users',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
@@ -304,7 +310,7 @@ class ActiveUsersTab extends StatelessWidget {
                       (a, b) => a.timestamp.compareTo(b.timestamp) > 0 ? a : b);
 
               return Card(
-                margin: EdgeInsets.all(8),
+                margin: const EdgeInsets.all(8),
                 child: ListTile(
                   leading: CircleAvatar(
                     child: Text(username[0].toUpperCase()),
@@ -314,26 +320,26 @@ class ActiveUsersTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Last Active: ${lastActivity.timestamp}'),
-                      Text('Status: Active'),
+                      const Text('Status: Active'),
                     ],
                   ),
                   trailing: PopupMenuButton(
                     itemBuilder: (context) => [
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'disable',
                         child: ListTile(
                           leading: Icon(Icons.block),
                           title: Text('Force Logout'),
                         ),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'activity',
                         child: ListTile(
                           leading: Icon(Icons.history),
                           title: Text('View Activity'),
                         ),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                           value: "delete",
                           child: ListTile(
                             leading: Icon(Icons.delete),
@@ -367,12 +373,12 @@ class ActiveUsersTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Force Logout User'),
-        content: Text('Are you sure you want to force logout this user?'),
+        title: const Text('Force Logout User'),
+        content: const Text('Are you sure you want to force logout this user?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -391,7 +397,7 @@ class ActiveUsersTab extends StatelessWidget {
               authProvider.addUserActivity(newActivity);
               Navigator.pop(context);
             },
-            child: Text('Force Logout'),
+            child: const Text('Force Logout'),
           ),
         ],
       ),
@@ -409,7 +415,7 @@ class ActiveUsersTab extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Activity History - $username'),
-        content: Container(
+        content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
             shrinkWrap: true,
@@ -431,7 +437,7 @@ class ActiveUsersTab extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -442,23 +448,25 @@ class ActiveUsersTab extends StatelessWidget {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
-              title: Text("Delete Account"),
-              content: Text("Are you sure you want to delete your account?"),
+              title: const Text("Delete Account"),
+              content: const Text("Are you sure you want to delete your account?"),
               actions: [
                 TextButton(
                     onPressed: () async {
                       //   await _deleteAccount(index);
                       Navigator.pop(context);
                     },
-                    child: Text("Yes")),
+                    child: const Text("Yes")),
                 TextButton(
-                    onPressed: () => Navigator.pop(context), child: Text("No")),
+                    onPressed: () => Navigator.pop(context), child: const Text("No")),
               ],
             ));
   }
 }
 
 class UserActivityTab extends StatelessWidget {
+  const UserActivityTab({super.key});
+
   // Helper method to format timestamp
   String _formatTimestamp(String timestamp) {
     final DateTime dateTime = DateTime.parse(timestamp);
@@ -515,10 +523,10 @@ class UserActivityTab extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(8),
+          padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: TextField(
                   decoration: InputDecoration(
                     labelText: 'Search Activity',
@@ -527,21 +535,21 @@ class UserActivityTab extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               PopupMenuButton(
-                icon: Icon(Icons.filter_list),
+                icon: const Icon(Icons.filter_list),
                 itemBuilder: (context) => [
-                  PopupMenuItem(
-                    child: Text('Last 24 Hours'),
+                  const PopupMenuItem(
                     value: '24h',
+                    child: Text('Last 24 Hours'),
                   ),
-                  PopupMenuItem(
-                    child: Text('Last 7 Days'),
+                  const PopupMenuItem(
                     value: '7d',
+                    child: Text('Last 7 Days'),
                   ),
-                  PopupMenuItem(
-                    child: Text('Last 30 Days'),
+                  const PopupMenuItem(
                     value: '30d',
+                    child: Text('Last 30 Days'),
                   ),
                 ],
                 onSelected: (value) {
@@ -553,7 +561,7 @@ class UserActivityTab extends StatelessWidget {
         ),
         Expanded(
           child: activities.isEmpty
-              ? Center(
+              ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -571,7 +579,7 @@ class UserActivityTab extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final activity = activities[index];
                     return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: _getActionColor(activity.actionType)
@@ -586,12 +594,12 @@ class UserActivityTab extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 activity.username,
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                             Text(
                               _formatTimestamp(activity.timestamp),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
                               ),
@@ -599,7 +607,7 @@ class UserActivityTab extends StatelessWidget {
                           ],
                         ),
                         subtitle: Padding(
-                          padding: EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             activity.actionType,
                             style: TextStyle(
@@ -664,7 +672,7 @@ class UserActivity {
 }
 
 class UserTab extends StatelessWidget {
-  const UserTab({Key? key}) : super(key: key);
+  const UserTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -717,25 +725,25 @@ class UserTab extends StatelessWidget {
                           children: [
                             // Password reset button instead of viewing password
                             TextButton.icon(
-                              icon: Icon(Icons.lock_reset),
-                              label: Text("Send Password Reset Link"),
+                              icon: const Icon(Icons.lock_reset),
+                              label: const Text("Send Password Reset Link"),
                               onPressed: () {
                                 // Show confirmation dialog
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
                                     return AlertDialog(
-                                      title: Text("Send Password Reset Email?"),
+                                      title: const Text("Send Password Reset Email?"),
                                       content: Text(
                                           "This will send a password reset link to ${user.email}. Continue?"),
                                       actions: [
                                         TextButton(
-                                          child: Text("Cancel"),
+                                          child: const Text("Cancel"),
                                           onPressed: () =>
                                               Navigator.of(context).pop(),
                                         ),
                                         TextButton(
-                                          child: Text("Send"),
+                                          child: const Text("Send"),
                                           onPressed: () {
                                             // Call your password reset service
                                             //   authProvider.sendPasswordResetEmail(user.email);
@@ -756,7 +764,7 @@ class UserTab extends StatelessWidget {
                                 );
                               },
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             _buildRoleUpdateButton(context, user, authProvider),
                           ],
                         ),
@@ -792,11 +800,11 @@ class UserTab extends StatelessWidget {
 
         if (user.status != UserStatus.deleted) {
           items.add(
-            PopupMenuItem<String>(
+            const PopupMenuItem<String>(
               value: 'delete',
               child: ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Delete User'),
+                leading: Icon(Icons.delete, color: Colors.red),
+                title: Text('Delete User'),
               ),
             ),
           );
@@ -804,21 +812,21 @@ class UserTab extends StatelessWidget {
 
         if (user.status != UserStatus.disabled) {
           items.add(
-            PopupMenuItem<String>(
+            const PopupMenuItem<String>(
               value: 'disable',
               child: ListTile(
-                leading: const Icon(Icons.block, color: Colors.orange),
-                title: const Text('Disable User'),
+                leading: Icon(Icons.block, color: Colors.orange),
+                title: Text('Disable User'),
               ),
             ),
           );
         } else {
           items.add(
-            PopupMenuItem<String>(
+            const PopupMenuItem<String>(
               value: 'enable',
               child: ListTile(
-                leading: const Icon(Icons.check_circle, color: Colors.green),
-                title: const Text('Enable User'),
+                leading: Icon(Icons.check_circle, color: Colors.green),
+                title: Text('Enable User'),
               ),
             ),
           );

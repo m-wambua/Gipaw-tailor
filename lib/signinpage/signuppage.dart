@@ -41,7 +41,7 @@ class _SignUpPageState extends State<SignUpPage> {
               radius: 24,
               backgroundColor: Colors.blue[50],
             ),
-            Text.rich(TextSpan(children: [
+            const Text.rich(TextSpan(children: [
               TextSpan(
                   text: 'Gipaw',
                   style: TextStyle(
@@ -263,7 +263,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => SignInPage()));
+                                builder: (context) => const SignInPage()));
                       },
                       child: const Text(
                         'Close',
@@ -283,7 +283,7 @@ class _SignUpPageState extends State<SignUpPage> {
   void _submitForm(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       try {
-        final uuid = Uuid();
+        final uuid = const Uuid();
         final application = UserApplication(
           id: uuid.v4(),
           username: _username,

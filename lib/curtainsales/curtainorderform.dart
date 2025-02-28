@@ -3,7 +3,7 @@ import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:intl/intl.dart';
 
 class CurtainOrderForm extends StatefulWidget {
-  const CurtainOrderForm({Key? key}) : super(key: key);
+  const CurtainOrderForm({super.key});
 
   @override
   State<CurtainOrderForm> createState() => _CurtainOrderFormState();

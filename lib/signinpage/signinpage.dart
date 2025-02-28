@@ -58,7 +58,7 @@ class _SignUpPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text('Sign In'),
+          title: const Text('Sign In'),
         ),
         body: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -68,7 +68,7 @@ class _SignUpPageState extends State<SignInPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SegmentedButton<SignInMethod>(
-                    segments: [
+                    segments: const [
                       ButtonSegment(
                           value: SignInMethod.username,
                           label: Text("Username")),
@@ -86,13 +86,13 @@ class _SignUpPageState extends State<SignInPage> {
                       });
                     },
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 24,
                   ),
                   TextFormField(
                     controller: _identifierController,
                     decoration: InputDecoration(
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                         labelText: _identifierLabel,
                         hintText: 'Enter your $_identifierLabel'),
                     validator: _validateIdentifier,
@@ -102,12 +102,12 @@ class _SignUpPageState extends State<SignInPage> {
                             ? TextInputType.emailAddress
                             : TextInputType.text,
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 16,
                   ),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Password',
                         hintText: 'Enter your password'),
@@ -122,7 +122,7 @@ class _SignUpPageState extends State<SignInPage> {
                       return null;
                     },
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 24,
                   ),
                   ElevatedButton(
@@ -137,7 +137,7 @@ class _SignUpPageState extends State<SignInPage> {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => MyHomePage()));
+                                    builder: (context) => const MyHomePage()));
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(
@@ -147,7 +147,7 @@ class _SignUpPageState extends State<SignInPage> {
                           }
                         }
                       },
-                      child: Text("Sign in")),
+                      child: const Text("Sign in")),
                   TextButton(
                       onPressed: () {
                         Navigator.pop(context);
@@ -167,21 +167,21 @@ class _SignUpPageState extends State<SignInPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Sign In'),
+            title: const Text('Sign In'),
             content: Column(
               children: <Widget>[
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Email/Usernmae'),
+                  decoration: const InputDecoration(labelText: 'Email/Usernmae'),
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Password'),
+                  decoration: const InputDecoration(labelText: 'Password'),
                   obscureText: true,
                 )
               ],
             ),
             actions: <Widget>[
               TextButton(
-                child: Text('Sign In'),
+                child: const Text('Sign In'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },

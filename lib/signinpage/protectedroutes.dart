@@ -23,11 +23,11 @@ class ProtectedNavigationButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const ProtectedNavigationButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.allowedRoles,
     required this.onPressed,
-  }) : super(key: key);
+  });
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(builder: (context, auth, child) {
@@ -36,7 +36,7 @@ class ProtectedNavigationButton extends StatelessWidget {
           onPressed: hasAccess
               ? onPressed
               : () {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content:
                         Text('You do not have permission to access this page'),
                     backgroundColor: Colors.red,
@@ -54,7 +54,7 @@ class ProtectedRoute extends StatelessWidget {
   final List<UserRole> allowedRoles;
   final Widget child;
 
-  const ProtectedRoute({
+  const ProtectedRoute({super.key, 
     required this.allowedRoles,
     required this.child,
   });
@@ -66,16 +66,16 @@ class ProtectedRoute extends StatelessWidget {
         if (!auth.hasPermission(allowedRoles)) {
           // Redirect to sign in or show access denied
           return Scaffold(
-            appBar: AppBar(title: Text('Access Denied')),
+            appBar: AppBar(title: const Text('Access Denied')),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('You don\'t have permission to access this page'),
-                  SizedBox(height: 16),
+                  const Text('You don\'t have permission to access this page'),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('Go Back'),
+                    child: const Text('Go Back'),
                   ),
                 ],
               ),

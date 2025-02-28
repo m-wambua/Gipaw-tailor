@@ -334,7 +334,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ],
                                     ),
-                                    SizedBox(
+                                    const SizedBox(
                                       height: 15,
                                     ),
                                     Row(
@@ -867,7 +867,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => Curtainsalespage()));
+                            builder: (context) => const Curtainsalespage()));
                   },
                 ),
                 ListTile(
@@ -984,7 +984,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: ListView(padding: EdgeInsets.zero, children: [
                   ProtectedNavigationButton(
                       text: "Sell Uniform",
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.admin,
                         UserRole.manager,
                         UserRole.user
@@ -992,7 +992,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: _uniformSales),
                   ProtectedNavigationButton(
                       text: 'Customer Receipts',
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.manager,
                         UserRole.user,
                         UserRole.admin
@@ -1004,7 +1004,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           )),
                   ProtectedNavigationButton(
                       text: "Sell Curtains",
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.admin,
                         UserRole.manager,
                         UserRole.user
@@ -1013,11 +1013,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => Curtainsalespage()));
+                                builder: (context) =>
+                                    const Curtainsalespage()));
                       }),
                   ProtectedNavigationButton(
                       text: "Sell New Clothes",
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.admin,
                         UserRole.manager,
                         UserRole.user
@@ -1025,7 +1026,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () => _newOrRepare()),
                   ProtectedNavigationButton(
                       text: "View Stock",
-                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      allowedRoles: const [UserRole.admin, UserRole.manager],
                       onPressed: () {
                         Navigator.push(
                             context,
@@ -1035,45 +1036,45 @@ class _MyHomePageState extends State<MyHomePage> {
                       }),
                   ProtectedNavigationButton(
                       text: "Sales",
-                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      allowedRoles: const [UserRole.admin, UserRole.manager],
                       onPressed: () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => SalesViewWrapper(
+                                builder: (context) => const SalesViewWrapper(
                                     salesFilePath:
                                         'lib/uniforms/sales/sales.json')));
                       }),
                   ProtectedNavigationButton(
                       text: "Reminders",
-                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      allowedRoles: const [UserRole.admin, UserRole.manager],
                       onPressed: () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => ReminderPage()));
+                                builder: (context) => const ReminderPage()));
                       }),
                   ProtectedNavigationButton(
                       text: "Contacts",
-                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      allowedRoles: const [UserRole.admin, UserRole.manager],
                       onPressed: () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => ContactsPage()));
+                                builder: (context) => const ContactsPage()));
                       }),
                   ProtectedNavigationButton(
                       text: "Sales Summary",
-                      allowedRoles: [UserRole.admin, UserRole.manager],
+                      allowedRoles: const [UserRole.admin, UserRole.manager],
                       onPressed: () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => SalesSummary()));
+                                builder: (context) => const SalesSummary()));
                       }),
                   ProtectedNavigationButton(
                       text: "Sign Up!",
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.admin,
                         UserRole.manager,
                         UserRole.user
@@ -1082,11 +1083,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => SignUpPage()));
+                                builder: (context) => const SignUpPage()));
                       }),
                   ProtectedNavigationButton(
                       text: "Sign In",
-                      allowedRoles: [
+                      allowedRoles: const [
                         UserRole.admin,
                         UserRole.manager,
                         UserRole.user
@@ -1097,18 +1098,18 @@ class _MyHomePageState extends State<MyHomePage> {
                               builder: (context) => const SignInPage()))),
                   ProtectedNavigationButton(
                       text: "Admin DashBoard",
-                      allowedRoles: [UserRole.admin],
+                      allowedRoles: const [UserRole.admin],
                       onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => AdminDashBoard()))),
-                  LogoutButton(),
+                  const LogoutButton(),
                   TextButton(
                       onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => ImageCaptureScreen())),
-                      child: Text("Image Capture"))
+                              builder: (context) => ImagePickerExample())),
+                      child: const Text("Image Capture"))
 
                   /*                
                   TextButton(
@@ -1254,7 +1255,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Flexible(
             child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(curtainItem.customerName), Text("Curtains")],
+          children: [Text(curtainItem.customerName), const Text("Curtains")],
         )),
         subtitle: Text('Phone Number: ${curtainItem.phoneNumber}'),
         children: [
@@ -1276,14 +1277,14 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Measurements:',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black87),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 ...curtainItem.part.split(',').asMap().entries.map((entry) {
                   int index = entry.key;
                   String part = entry.value.trim();
@@ -1295,18 +1296,18 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Text(
                           '$part: ',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Colors.black87),
                         ),
                         Text(
                           measurement,
-                          style: TextStyle(color: Colors.black54),
+                          style: const TextStyle(color: Colors.black54),
                         ),
                       ],
                     ),
                   );
-                }).toList()
+                })
               ],
             ),
           ),
@@ -1339,12 +1340,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: () {
                     _sendPickUpNotificationCurtain(curtainItem);
                   },
-                  child: Text('Ready for pickup')),
+                  child: const Text('Ready for pickup')),
               ElevatedButton(
                   onPressed: () {
                     _showUpdateCurtainPaymentDialog(curtainItem);
                   },
-                  child: Text('Update Payment'))
+                  child: const Text('Update Payment'))
             ],
           )
         ],
@@ -1375,18 +1376,18 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 TextFormField(
                   controller: depositController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                       labelText: "Deposit",
                       hintText: "Enter Deposit amount",
                       border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 10,
                 ),
                 DropdownButtonFormField<String>(
                   value: paymentTypeController.text,
-                  decoration: InputDecoration(labelText: "Payment Type"),
+                  decoration: const InputDecoration(labelText: "Payment Type"),
                   items: ["Cash", "Card", "Bank Transfer", "Mpesa"].map((type) {
                     return DropdownMenuItem(
                       value: type,
@@ -1402,14 +1403,14 @@ class _MyHomePageState extends State<MyHomePage> {
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel')),
+                  child: const Text('Cancel')),
               ElevatedButton(
                   onPressed: () {
                     _processCurtainPayment(curtainItem, depositController.text,
                         paymentTypeController.text);
                     Navigator.of(context).pop();
                   },
-                  child: Text("Add Payment"))
+                  child: const Text("Add Payment"))
             ],
           );
         });
@@ -1517,7 +1518,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Flexible(
             child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text(clothingItem.customerName), Text("Clothing")],
+          children: [Text(clothingItem.customerName), const Text("Clothing")],
         )),
         subtitle: Text('Phone Number: ${clothingItem.phoneNumber}'),
         children: [
@@ -1536,14 +1537,14 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Measurements:',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black87),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 ...clothingItem.part.split(',').asMap().entries.map((entry) {
                   int index = entry.key;
                   String part = entry.value.trim();
@@ -1555,18 +1556,18 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Text(
                           '$part: ',
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Colors.black87),
                         ),
                         Text(
                           measurement,
-                          style: TextStyle(color: Colors.black54),
+                          style: const TextStyle(color: Colors.black54),
                         ),
                       ],
                     ),
                   );
-                }).toList()
+                })
               ],
             ),
           ),
@@ -1599,12 +1600,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: () {
                     _sendPickUpNotification(clothingItem);
                   },
-                  child: Text('Ready for pickup')),
+                  child: const Text('Ready for pickup')),
               ElevatedButton(
                   onPressed: () {
                     _showUpdatePaymentDialog(clothingItem);
                   },
-                  child: Text('Update Payment'))
+                  child: const Text('Update Payment'))
             ],
           )
         ],
@@ -1635,18 +1636,18 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 TextFormField(
                   controller: depositController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                       labelText: "Deposit",
                       hintText: "Enter Deposit amount",
                       border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 10,
                 ),
                 DropdownButtonFormField<String>(
                   value: paymentTypeController.text,
-                  decoration: InputDecoration(labelText: "Payment Type"),
+                  decoration: const InputDecoration(labelText: "Payment Type"),
                   items: ["Cash", "Card", "Bank Transfer", "Mpesa"].map((type) {
                     return DropdownMenuItem(
                       value: type,
@@ -1662,14 +1663,14 @@ class _MyHomePageState extends State<MyHomePage> {
             actions: [
               TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel')),
+                  child: const Text('Cancel')),
               ElevatedButton(
                   onPressed: () {
                     _processPayment(clothingItem, depositController.text,
                         paymentTypeController.text);
                     Navigator.of(context).pop();
                   },
-                  child: Text("Add Payment"))
+                  child: const Text("Add Payment"))
             ],
           );
         });
@@ -1725,7 +1726,7 @@ class _MyHomePageState extends State<MyHomePage> {
       String SuccessMessage =
           'Payment of $depositAmount processed successfully';
       if (paymentStatus == ClothingPaymentStatus.finalpayment) {
-        SuccessMessage = "Final payment processed.Receipt#: ${receiptNumber}";
+        SuccessMessage = "Final payment processed.Receipt#: $receiptNumber";
       }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(SuccessMessage)));
@@ -1765,7 +1766,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           subtitle: isFullyPaid
-              ? Text(
+              ? const Text(
                   'FULLY PAID',
                   style: TextStyle(
                     color: Colors.green,
@@ -1773,19 +1774,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 )
               : null,
-          trailing: isFullyPaid && receiptPayment != null
+          trailing: isFullyPaid
               ? Chip(
                   label: Text('Receipt: ${receiptPayment.receiptNumber}'),
                   backgroundColor: Colors.green.shade100,
                 )
               : null,
         ),
-        if (isFullyPaid && receiptPayment != null)
+        if (isFullyPaid)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ElevatedButton.icon(
-              icon: Icon(Icons.receipt_long),
-              label: Text('View Receipt'),
+              icon: const Icon(Icons.receipt_long),
+              label: const Text('View Receipt'),
               onPressed: () {
                 _showReceiptDialog(order, receiptPayment);
               },
@@ -1799,27 +1800,27 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Payment Receipt'),
+        title: const Text('Payment Receipt'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Receipt Number: ${payment.receiptNumber}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              Divider(),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Divider(),
               Text('Customer: ${order.customerName}'),
               Text('Order Number: ${order.orderNumber}'),
               Text(
                   'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
               Text('Payment Method: ${payment.method}'),
-              Divider(),
+              const Divider(),
               Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              Text('Thank you for your business!',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              const Text('Thank you for your business!',
                   style: TextStyle(fontStyle: FontStyle.italic)),
             ],
           ),
@@ -1827,15 +1828,15 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
           ElevatedButton.icon(
-            icon: Icon(Icons.print),
-            label: Text('Print'),
+            icon: const Icon(Icons.print),
+            label: const Text('Print'),
             onPressed: () {
               // Implement printing functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Printing not implemented yet')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Printing not implemented yet')));
               Navigator.pop(context);
             },
           ),
@@ -1873,7 +1874,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           subtitle: isFullyPaid
-              ? Text(
+              ? const Text(
                   'FULLY PAID',
                   style: TextStyle(
                     color: Colors.green,
@@ -1881,19 +1882,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 )
               : null,
-          trailing: isFullyPaid && receiptPayment != null
+          trailing: isFullyPaid
               ? Chip(
                   label: Text('Receipt: ${receiptPayment.receiptNumber}'),
                   backgroundColor: Colors.green.shade100,
                 )
               : null,
         ),
-        if (isFullyPaid && receiptPayment != null)
+        if (isFullyPaid)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ElevatedButton.icon(
-              icon: Icon(Icons.receipt_long),
-              label: Text('View Receipt'),
+              icon: const Icon(Icons.receipt_long),
+              label: const Text('View Receipt'),
               onPressed: () {
                 _showReceiptDialogClothing(order, receiptPayment);
               },
@@ -1908,27 +1909,27 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Payment Receipt'),
+        title: const Text('Payment Receipt'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Receipt Number: ${payment.receiptNumber}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              Divider(),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Divider(),
               Text('Customer: ${order.customerName}'),
               Text('Order Number: ${order.orderName}'),
               Text(
                   'Payment Date: ${DateFormat('yyyy-MM-dd').format(payment.timestamp)}'),
               Text('Payment Method: ${payment.method}'),
-              Divider(),
+              const Divider(),
               Text('Total Amount: ${order.totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('Amount Paid: ${order.totalPaid.toStringAsFixed(2)}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              Text('Thank you for your business!',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              const Text('Thank you for your business!',
                   style: TextStyle(fontStyle: FontStyle.italic)),
             ],
           ),
@@ -1936,15 +1937,15 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
           ElevatedButton.icon(
-            icon: Icon(Icons.print),
-            label: Text('Print'),
+            icon: const Icon(Icons.print),
+            label: const Text('Print'),
             onPressed: () {
               // Implement printing functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Printing not implemented yet')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Printing not implemented yet')));
               Navigator.pop(context);
             },
           ),
@@ -2423,7 +2424,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Receipt saved successfully'); // For debugging
     } catch (e) {
       print('Error saving receipt: $e'); // For debugging
-      throw e; // Re-throw to be handled by the calling function
+      rethrow; // Re-throw to be handled by the calling function
     }
   }
 
@@ -2875,9 +2876,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => MpesaPaymentScreen()));
+                                builder: (context) =>
+                                    const MpesaPaymentScreen()));
                       },
-                      child: Text("Lipa na Mpesa"))
+                      child: const Text("Lipa na Mpesa"))
                 ],
               ),
               actions: [

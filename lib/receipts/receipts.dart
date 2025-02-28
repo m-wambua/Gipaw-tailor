@@ -39,9 +39,9 @@ class PaymentCalculatorDialog extends StatefulWidget {
   final double totalAmount;
 
   const PaymentCalculatorDialog({
-    Key? key,
+    super.key,
     required this.totalAmount,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentCalculatorDialog> createState() =>
@@ -122,10 +122,9 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
               const SizedBox(height: 10),
               ...payments.map((payment) => ListTile(
                     title: Text(
-                        '${payment.method}: \$${payment.amount.toStringAsFixed(2)}' +
-                            (payment.givenAmount != null
+                        '${payment.method}: \$${payment.amount.toStringAsFixed(2)}${payment.givenAmount != null
                                 ? '\nChange: \$${(payment.givenAmount! - payment.amount).toStringAsFixed(2)}'
-                                : '')),
+                                : ''}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () {
@@ -232,6 +231,8 @@ class _PaymentCalculatorDialogState extends State<PaymentCalculatorDialog> {
 }
 
 class CustomerDetailsDialog extends StatefulWidget {
+  const CustomerDetailsDialog({super.key});
+
   @override
   State<CustomerDetailsDialog> createState() => _CustomerDetailsDialogState();
 }
