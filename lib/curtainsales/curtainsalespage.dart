@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:gipaw_tailor/clothesentrymodel/newandrepare.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Curtainsalespage extends StatefulWidget {
   const Curtainsalespage({super.key});
@@ -38,6 +40,11 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     fulfillmentDate: null,
     createdBy: '',
   );
+
+  Uint8List? _imageBytes;
+
+  List<Uint8List> _multipleImages = [];
+  final ImagePicker _picker = ImagePicker();
   @override
   void initState() {
     super.initState();
@@ -115,6 +122,23 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           ),
           ListTile(
             title: Text("Curtain Type : ${curtainOrder.curtainType}"),
+          ),
+          ElevatedButton(
+              onPressed: () async {
+                await _loadAllSavedImages();
+              },
+              child: Text('Load Sample')),
+          Container(
+            height: 200,
+            child: _multipleImages.isEmpty
+                ? Center(child: Text('No Image Selected'))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _multipleImages.length,
+                    itemBuilder: (context, index) {
+                      return Image.memory(_multipleImages[index]);
+                    },
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -417,8 +441,8 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             label: const Text('Print'),
             onPressed: () {
               // Implement printing functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Printing not implemented yet')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Printing not implemented yet')));
               Navigator.pop(context);
             },
           ),
@@ -1035,7 +1059,9 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 title: const Text('Choose from gallery'),
                 onTap: () async {
                   // Close dialog first
+
                   Navigator.pop(context);
+                  _pickMultipleImages();
                 },
               ),
 
@@ -1052,63 +1078,13 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
               ),
 
               // Show current images if any
-              if (selectedImageUrls.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Current images:'),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 120,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: selectedImageUrls.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Stack(
-                          children: [
-                            Container(
-                              width: 100,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                                image: DecorationImage(
-                                  image: NetworkImage(selectedImageUrls[index]),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    selectedImageUrls.removeAt(index);
-                                  });
-                                  Navigator.pop(context);
-                                  _showImagesConfirmationDialog(
-                                      selectedImageUrls);
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+              if (_imageBytes != null)
+                Image.memory(
+                  _imageBytes!,
+                  height: 200,
+                )
+              else
+                Text('No Image Selected')
             ],
           ),
           actions: [
@@ -1149,6 +1125,111 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
         );
       },
     );
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final File imageFile = File(pickedFile.path);
+      final Uint8List bytes = await imageFile.readAsBytes();
+
+      setState(() {
+        _imageBytes = bytes;
+      });
+
+      await _saveImageToStorage(bytes);
+    }
+  }
+
+  Future<void> _saveImageToStorage(Uint8List bytes) async {
+    try {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      final String filePath = '${directory.path}/my_image.jpg';
+      final File file = File(filePath);
+      await file.writeAsBytes(bytes);
+      print("Image saved to:$filePath");
+    } catch (e) {
+      print("Error saving image: $e");
+    }
+  }
+
+  Future<Uint8List?> _loadImageFromStorage() async {
+    try {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      final String filePath = '${directory.path}/my_image.jpg';
+      final File file = File(filePath);
+      if (await file.exists()) {
+        final Uint8List bytes = await file.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+          Image.memory(
+            bytes,
+            height: 200,
+          );
+        });
+        print("Image loaded from: $filePath");
+        return bytes;
+      } else {
+        print("File does not exist");
+        return null;
+      }
+    } catch (e) {
+      print("Error loading image: $e");
+      return null;
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    final List<XFile>? pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      for (int i = 0; i < pickedFiles.length; i++) {
+        final File imageFile = File(pickedFiles[i].path);
+        final Uint8List bytes = await imageFile.readAsBytes();
+
+        setState(() {
+          _multipleImages.add(bytes);
+        });
+
+        await _saveImageWithId(bytes, 'image_$i');
+      }
+    }
+  }
+
+  Future<void> _saveImageWithId(Uint8List bytes, String imageId) async {
+    try {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      final String filePath = '${directory.path}/$imageId.jpg';
+      final File file = File(filePath);
+      await file.writeAsBytes(bytes);
+      print("Image saved to: $filePath");
+    } catch (e) {
+      print("Error saving image: $e");
+    }
+  }
+
+  Future<void> _loadAllSavedImages() async {
+    try {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      final List<FileSystemEntity> files = directory.listSync();
+
+      List<Uint8List> loadedImages = [];
+      for (FileSystemEntity file in files) {
+        if (file.path.endsWith('.jpg') && file.path.contains('image_')) {
+          final File imageFile = File(file.path);
+          final Uint8List bytes = await imageFile.readAsBytes();
+          loadedImages.add(bytes);
+        }
+      }
+
+      setState(() {
+        _multipleImages = loadedImages;
+      });
+
+      print("Loaded ${loadedImages.length} images");
+    } catch (e) {
+      print("Error loading images: $e");
+    }
   }
 
 // Helper function to show loading dialog
