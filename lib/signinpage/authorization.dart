@@ -155,7 +155,7 @@ class AuthProvider with ChangeNotifier {
         // Ensure each item in the list is a Map<String, dynamic>
         _users = jsonList
             .whereType<Map<String, dynamic>>()
-            .map((json) => User.fromJson(json as Map<String, dynamic>))
+            .map((json) => User.fromJson(json))
             .toList();
       } else {
         _users = [];

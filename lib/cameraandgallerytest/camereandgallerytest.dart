@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 
 class ImagePickerExample extends StatefulWidget {
+  const ImagePickerExample({super.key});
+
   @override
   _ImagePickerExampleState createState() => _ImagePickerExampleState();
 }
@@ -34,7 +36,7 @@ class _ImagePickerExampleState extends State<ImagePickerExample> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Image Picker Example')),
+      appBar: AppBar(title: const Text('Image Picker Example')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -45,11 +47,11 @@ class _ImagePickerExampleState extends State<ImagePickerExample> {
                 height: 200,
               )
             else
-              Text('No image selected'),
-            SizedBox(height: 20),
+              const Text('No image selected'),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _pickImage,
-              child: Text('Pick Image'),
+              child: const Text('Pick Image'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -60,7 +62,7 @@ class _ImagePickerExampleState extends State<ImagePickerExample> {
                   });
                 }
               },
-              child: Text('Load Saved Image'),
+              child: const Text('Load Saved Image'),
             ),
           ],
         ),

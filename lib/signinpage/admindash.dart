@@ -69,9 +69,9 @@ class _AdminDashBoardState extends State<AdminDashBoard>
           body: TabBarView(
             controller: _tabController,
             children: [
-              PendingApplicationsTab(),
+              const PendingApplicationsTab(),
               ActiveUsersTab(),
-              UserActivityTab(),
+              const UserActivityTab(),
               const UserTab()
             ],
           ),

@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: isFirstRun ? AdminSetupPage() : const SignInPage(),
+        home: isFirstRun ? const AdminSetupPage() : const SignInPage(),
       ),
     );
   }
@@ -139,8 +139,8 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: _isLoading
-                      ? CircularProgressIndicator()
-                      : Text('Complete Setup'),
+                      ? const CircularProgressIndicator()
+                      : const Text('Complete Setup'),
                 ),
               ),
             ],

@@ -283,7 +283,7 @@ class _SignUpPageState extends State<SignUpPage> {
   void _submitForm(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       try {
-        final uuid = const Uuid();
+        const uuid = Uuid();
         final application = UserApplication(
           id: uuid.v4(),
           username: _username,

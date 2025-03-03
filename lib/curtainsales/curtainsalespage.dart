@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -21,7 +22,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   final _measurementsController = TextEditingController();
   final _chargesController = TextEditingController();
   final _curtainService = CurtainService();
-  List<CurtainItem> curtainItems = [];
+
   List<CurtainOrder> curtainOrders = [];
   CurtainOrder currentOrder = CurtainOrder(
     orderNumber: '',
@@ -63,7 +64,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     } catch (e) {
       print('Error loading curtain items: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error Loading Curtain Items")));
+          const SnackBar(content: Text("Error Loading Curtain's Items")));
     }
   }
 
@@ -108,6 +109,22 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     double originalCharges =
         double.parse((curtainOrder.totalAmount).toStringAsFixed(2));
     double remainingBalance = originalCharges - totalDeposited;
+
+    List<Uint8List> orderImages = curtainOrder.imageUrls.map((img) {
+      if (img != null && img.startsWith("/")) {
+        // It's a file path, load it as a file
+        File file = File(img!);
+        if (file.existsSync()) {
+          return file.readAsBytesSync();
+        } else {
+          return Uint8List(0); // Return an empty image placeholder
+        }
+      } else {
+        // It's a base64 string, decode it
+        return base64Decode(img!);
+      }
+    }).toList();
+
     return Card(
       child: ExpansionTile(
         title: Text(curtainOrder.customerName),
@@ -125,18 +142,34 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
           ),
           ElevatedButton(
               onPressed: () async {
-                await _loadAllSavedImages();
+                final images = await _loadImagesForOrder(curtainOrder);
+                setState(() {
+                  orderImages = images;
+                });
               },
-              child: Text('Load Sample')),
-          Container(
+              child: const Text('Load Sample')),
+          SizedBox(
             height: 200,
-            child: _multipleImages.isEmpty
-                ? Center(child: Text('No Image Selected'))
+            child: orderImages.isEmpty
+                ? const Center(child: Text('No Image Selected'))
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _multipleImages.length,
+                    itemCount: orderImages.length,
                     itemBuilder: (context, index) {
-                      return Image.memory(_multipleImages[index]);
+                      return GestureDetector(
+                        onTap: () {
+                          // Open full-screen image view
+                          _openFullScreenImage(context, orderImages, index);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          child: Image.memory(orderImages[index]),
+                        ),
+                      );
                     },
                   ),
           ),
@@ -494,7 +527,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                   title: const Text('New'),
                   onTap: () {
                     Navigator.pop(context);
-                    _newCurtain('New Curtain');
+                    _newCurtain('New Curtain', existingOrder: currentOrder);
                   },
                 ),
                 ListTile(
@@ -510,7 +543,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
         });
   }
 
-  void _newCurtain(String newCurtain) async {
+  void _newCurtain(String newCurtain, {CurtainOrder? existingOrder}) async {
     final formKey = GlobalKey<FormState>();
     List<Map<String, dynamic>> paymentPairs = [
       {
@@ -530,6 +563,25 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     bool materialOwner = false;
     final paymentTypes = ["Cash", "Card", "Bank Transfer", "Mpesa"];
     final curtainTypes = ["Rings", "Hooks", "Other"];
+
+    CurtainOrder currentOrder = existingOrder ??
+        CurtainOrder(
+          imageUrls:
+              _multipleImages.map((image) => base64Encode(image)).toList(),
+          orderNumber: '',
+          createdAt: DateTime.now(),
+          customerName: '',
+          phoneNumber: '',
+          materialOwner: '',
+          curtainType: curtainTypes.first,
+          notes: '',
+          part: '',
+          measurement: '',
+          totalAmount: 0.0,
+          payments: [],
+          createdBy: getCurrentUser(),
+          status: CurtainOrderStatus.pending,
+        );
 
     await showDialog(
       context: context,
@@ -642,6 +694,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
 
                       // Measurement pairs section
                       Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: measurementPairs.asMap().entries.map((entry) {
                           var pair = entry.value;
                           return Container(
@@ -960,26 +1013,29 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
 
                                 // Create new curtain order
                                 final CurtainOrder newOrder = CurtainOrder(
-                                  orderNumber: orderNumber,
-                                  createdAt: DateTime.now(),
-                                  customerName: _nameController.text,
-                                  phoneNumber: _phoneNumberController.text,
-                                  materialOwner:
-                                      materialOwner ? 'Customer' : 'Shop',
-                                  curtainType: curtainTypes.first,
-                                  notes: _measurementsController.text,
-                                  part: measurementPairs
-                                      .map((pair) => pair['part']!.text)
-                                      .join(','),
-                                  measurement: measurementPairs
-                                      .map((pair) => pair['measurement']!.text)
-                                      .join(','),
-                                  totalAmount: totalAmount,
-                                  payments: payments,
-                                  createdBy:
-                                      getCurrentUser(), // Assuming you have a method to get current user
-                                  status: status,
-                                );
+                                    orderNumber: orderNumber,
+                                    createdAt: DateTime.now(),
+                                    customerName: _nameController.text,
+                                    phoneNumber: _phoneNumberController.text,
+                                    materialOwner:
+                                        materialOwner ? 'Customer' : 'Shop',
+                                    curtainType: curtainTypes.first,
+                                    notes: _measurementsController.text,
+                                    part: measurementPairs
+                                        .map((pair) => pair['part']!.text)
+                                        .join(','),
+                                    measurement: measurementPairs
+                                        .map(
+                                            (pair) => pair['measurement']!.text)
+                                        .join(','),
+                                    totalAmount: totalAmount,
+                                    payments: payments,
+                                    createdBy:
+                                        getCurrentUser(), // Assuming you have a method to get current user
+                                    status: status,
+                                    imageUrls: currentOrder.imageUrls,
+                                    fulfillmentDate:
+                                        currentOrder.fulfillmentDate);
 
                                 // Save the order using the service
                                 await _curtainService
@@ -1027,11 +1083,26 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
   }
 
   Future _addSample() async {
-    List<String> selectedImageUrls = [];
-
-    // If we already have images, initialize with existing ones
-    if (currentOrder.imageUrls.isNotEmpty) {
-      selectedImageUrls = List.from(currentOrder.imageUrls);
+    // Use local image paths in the currentOrder
+    List<String> selectedImagePaths = List.from(currentOrder.imageUrls);
+    if (currentOrder == null) {
+      currentOrder = CurtainOrder(
+        orderNumber: '',
+        createdAt: DateTime.now(),
+        customerName: '',
+        phoneNumber: '',
+        materialOwner: '',
+        curtainType: '',
+        imageUrls: [],
+        notes: '',
+        part: '',
+        measurement: '',
+        totalAmount: 0.0,
+        payments: [],
+        status: CurtainOrderStatus.pending,
+        fulfillmentDate: null,
+        createdBy: '',
+      );
     }
 
     showDialog(
@@ -1048,8 +1119,13 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Take a photo'),
                 onTap: () async {
-                  // Close dialog first
                   Navigator.pop(context);
+                  // Implement camera functionality
+                  final XFile? photo =
+                      await _picker.pickImage(source: ImageSource.camera);
+                  if (photo != null) {
+                    _processPickedImage(photo);
+                  }
                 },
               ),
 
@@ -1057,9 +1133,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Choose from gallery'),
-                onTap: () async {
-                  // Close dialog first
-
+                onTap: () {
                   Navigator.pop(context);
                   _pickMultipleImages();
                 },
@@ -1070,21 +1144,32 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                 leading: const Icon(Icons.link),
                 title: const Text('Add social media link'),
                 onTap: () {
-                  // Close current dialog
                   Navigator.pop(context);
-
-                  // Show dialog to enter link
+                  _showAddLinkDialog();
                 },
               ),
 
-              // Show current images if any
-              if (_imageBytes != null)
-                Image.memory(
-                  _imageBytes!,
-                  height: 200,
-                )
-              else
-                Text('No Image Selected')
+              // Preview section for selected images
+              SizedBox(
+                height: 150,
+                child: _multipleImages.isNotEmpty
+                    ? ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _multipleImages.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Image.memory(
+                              _multipleImages[index],
+                              height: 140,
+                              width: 140,
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
+                      )
+                    : const Center(child: Text('No images selected')),
+              ),
             ],
           ),
           actions: [
@@ -1096,27 +1181,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
             ),
             TextButton(
               onPressed: () {
-                // Save all selected images to the current order
-                setState(() {
-                  currentOrder = CurtainOrder(
-                    // Copy all existing fields
-                    orderNumber: currentOrder.orderNumber,
-                    createdAt: currentOrder.createdAt,
-                    customerName: currentOrder.customerName,
-                    phoneNumber: currentOrder.phoneNumber,
-                    materialOwner: currentOrder.materialOwner,
-                    curtainType: currentOrder.curtainType,
-                    imageUrls: selectedImageUrls, // Update with new list
-                    notes: currentOrder.notes,
-                    part: currentOrder.part,
-                    measurement: currentOrder.measurement,
-                    totalAmount: currentOrder.totalAmount,
-                    payments: currentOrder.payments,
-                    status: currentOrder.status,
-                    fulfillmentDate: currentOrder.fulfillmentDate,
-                    createdBy: currentOrder.createdBy,
-                  );
-                });
+                _saveSelectedImages();
                 Navigator.pop(context);
               },
               child: const Text('Save All'),
@@ -1127,109 +1192,190 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      final File imageFile = File(pickedFile.path);
-      final Uint8List bytes = await imageFile.readAsBytes();
+// Process a single picked image
+  Future<void> _processPickedImage(XFile imageFile) async {
+    try {
+      final File file = File(imageFile.path);
+      final Uint8List bytes = await file.readAsBytes();
+
+      final String savedPath = await _saveImageToStorage(bytes);
 
       setState(() {
-        _imageBytes = bytes;
+        _multipleImages.add(bytes);
+        currentOrder.imageUrls.add(savedPath);
+        print("Image path added: $savedPath");
+        print("Current image urls : ${currentOrder.imageUrls}");
       });
-
-      await _saveImageToStorage(bytes);
-    }
-  }
-
-  Future<void> _saveImageToStorage(Uint8List bytes) async {
-    try {
-      final Directory directory = await getApplicationDocumentsDirectory();
-      final String filePath = '${directory.path}/my_image.jpg';
-      final File file = File(filePath);
-      await file.writeAsBytes(bytes);
-      print("Image saved to:$filePath");
     } catch (e) {
-      print("Error saving image: $e");
+      print("Error in _processPickedImage: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error processing image: $e")),
+      );
     }
   }
 
-  Future<Uint8List?> _loadImageFromStorage() async {
-    try {
-      final Directory directory = await getApplicationDocumentsDirectory();
-      final String filePath = '${directory.path}/my_image.jpg';
-      final File file = File(filePath);
-      if (await file.exists()) {
-        final Uint8List bytes = await file.readAsBytes();
-        setState(() {
-          _imageBytes = bytes;
-          Image.memory(
-            bytes,
-            height: 200,
-          );
-        });
-        print("Image loaded from: $filePath");
-        return bytes;
-      } else {
-        print("File does not exist");
-        return null;
-      }
-    } catch (e) {
-      print("Error loading image: $e");
-      return null;
-    }
-  }
-
+// Pick multiple images from gallery
   Future<void> _pickMultipleImages() async {
     final List<XFile>? pickedFiles = await _picker.pickMultiImage();
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
-      for (int i = 0; i < pickedFiles.length; i++) {
-        final File imageFile = File(pickedFiles[i].path);
-        final Uint8List bytes = await imageFile.readAsBytes();
-
-        setState(() {
-          _multipleImages.add(bytes);
-        });
-
-        await _saveImageWithId(bytes, 'image_$i');
+      for (XFile pickedFile in pickedFiles) {
+        await _processPickedImage(pickedFile);
       }
     }
   }
 
-  Future<void> _saveImageWithId(Uint8List bytes, String imageId) async {
+// Save an image to storage and return its path
+  Future<String> _saveImageToStorage(Uint8List bytes) async {
     try {
+      final String uniqueId = DateTime.now().millisecondsSinceEpoch.toString();
       final Directory directory = await getApplicationDocumentsDirectory();
-      final String filePath = '${directory.path}/$imageId.jpg';
+      final String filePath = '${directory.path}/image_$uniqueId.jpg';
       final File file = File(filePath);
+      print("Saving image to: $filePath");
       await file.writeAsBytes(bytes);
       print("Image saved to: $filePath");
+      return filePath;
     } catch (e) {
       print("Error saving image: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving image: $e")),
+      );
+      return "";
     }
   }
 
-  Future<void> _loadAllSavedImages() async {
-    try {
-      final Directory directory = await getApplicationDocumentsDirectory();
-      final List<FileSystemEntity> files = directory.listSync();
+// Save all selected images to the current order
+  void _saveSelectedImages() {
+    setState(() {
+      currentOrder = CurtainOrder(
+        orderNumber: currentOrder.orderNumber,
+        createdAt: currentOrder.createdAt,
+        customerName: currentOrder.customerName,
+        phoneNumber: currentOrder.phoneNumber,
+        materialOwner: currentOrder.materialOwner,
+        curtainType: currentOrder.curtainType,
+        imageUrls: currentOrder.imageUrls,
+        notes: currentOrder.notes,
+        part: currentOrder.part,
+        measurement: currentOrder.measurement,
+        totalAmount: currentOrder.totalAmount,
+        payments: currentOrder.payments,
+        status: currentOrder.status,
+        fulfillmentDate: currentOrder.fulfillmentDate,
+        createdBy: currentOrder.createdBy,
+      );
+      print("saved image urls: ${currentOrder.imageUrls}");
+    });
+  }
 
-      List<Uint8List> loadedImages = [];
-      for (FileSystemEntity file in files) {
-        if (file.path.endsWith('.jpg') && file.path.contains('image_')) {
-          final File imageFile = File(file.path);
-          final Uint8List bytes = await imageFile.readAsBytes();
-          loadedImages.add(bytes);
+// Load all images for the current order
+  Future<List<Uint8List>> _loadImagesForOrder(CurtainOrder order) async {
+    List<Uint8List> images = [];
+
+    try {
+      for (String? imagePath in order.imageUrls) {
+        if (imagePath != null && imagePath.isNotEmpty) {
+          if (imagePath.startsWith('http')) {
+            // Handle URLs (social media links) if needed
+          } else {
+            print("Loading image from: $imagePath");
+            final File imageFile = File(imagePath);
+            if (await imageFile.exists()) {
+              final Uint8List bytes = await imageFile.readAsBytes();
+              print("Image loaded, bytes length: ${bytes.length}");
+              images.add(bytes);
+            } else {
+              print("File does not exist: $imagePath");
+            }
+          }
         }
       }
-
-      setState(() {
-        _multipleImages = loadedImages;
-      });
-
-      print("Loaded ${loadedImages.length} images");
+      print("Loaded ${images.length} images for order ${order.orderNumber}");
     } catch (e) {
-      print("Error loading images: $e");
+      print("Error loading order images: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading images: $e")),
+      );
     }
+    return images;
+  }
+
+// Method to open full-screen image view
+  void _openFullScreenImage(
+      BuildContext context, List<Uint8List> images, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Image Preview',
+                style: TextStyle(color: Colors.white)),
+          ),
+          backgroundColor: Colors.black,
+          body: GestureDetector(
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+            child: Center(
+              child: PageView.builder(
+                controller: PageController(initialPage: initialIndex),
+                itemCount: images.length,
+                itemBuilder: (context, index) {
+                  return InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.memory(
+                      images[index],
+                      fit: BoxFit.contain,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+// Show dialog to add social media link
+  void _showAddLinkDialog() {
+    final TextEditingController linkController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Social Media Link'),
+          content: TextField(
+            controller: linkController,
+            decoration: const InputDecoration(
+              hintText: 'Enter social media image link',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (linkController.text.isNotEmpty) {
+                  setState(() {
+                    currentOrder.imageUrls.add(linkController.text);
+                  });
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
 // Helper function to show loading dialog
@@ -1470,7 +1616,16 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                         style: TextStyle(color: Colors.red),
                       )),
                   TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        final DateTime fulfillmentDateTime = DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          selectedTime.hour,
+                          selectedTime.minute,
+                        );
+                        Navigator.of(context).pop(fulfillmentDateTime);
+                      },
                       child: const Text(
                         'Save',
                         style: TextStyle(color: Colors.green),
@@ -1479,6 +1634,12 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
               )
             ],
           );
+        }).then((value) {
+      if (value != null) {
+        setState(() {
+          currentOrder.fulfillmentDate = value;
         });
+      }
+    });
   }
 }

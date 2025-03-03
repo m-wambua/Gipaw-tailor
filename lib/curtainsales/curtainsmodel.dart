@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,7 +69,7 @@ class CurtainOrder {
     required this.phoneNumber,
     required this.materialOwner,
     required this.curtainType,
-    this.imageUrls= const[],
+    this.imageUrls = const [],
     required this.notes,
     required this.part,
     required this.measurement,
@@ -90,40 +92,63 @@ class CurtainOrder {
         'phoneNumber': phoneNumber,
         'materialOwner': materialOwner,
         'curtainType': curtainType,
-        'imageUrl': imageUrls,
+        'imageUrls': imageUrls, // Changed from 'imageUrl' to 'imageUrls'
         'notes': notes,
         'part': part,
         'measurement': measurement,
         'totalAmount': totalAmount,
-        'status': status.name, // Using .name to get the enum value as a string
+        'status': status.name,
         'fulfillmentDate': fulfillmentDate?.toIso8601String(),
         'createdBy': createdBy,
         'payments': payments.map((p) => p.toJson()).toList(),
       };
-  factory CurtainOrder.fromJson(Map<String, dynamic> json) => CurtainOrder(
-        orderNumber: json['orderNumber'],
-        createdAt: DateTime.parse(json['createdAt']),
-        customerName: json['customerName'],
-        phoneNumber: json['phoneNumber'],
-        materialOwner: json['materialOwner'],
-        curtainType: json['curtainType'],
-          imageUrls: json.containsKey('imageUrls') 
-        ? (json['imageUrls'] as List).map((url) => url as String).toList()
-        : json['imageUrl'] != null ? [json['imageUrl'] as String] : [],
-        notes: json['notes'],
-        part: json['part'],
-        measurement: json['measurement'],
-        totalAmount: (json['totalAmount'] as num).toDouble(),
-        status: CurtainOrderStatus.values
-            .byName(json['status']), // This is the key fix
-        fulfillmentDate: json['fulfillmentDate'] != null
-            ? DateTime.parse(json['fulfillmentDate'])
-            : null,
-        createdBy: json['createdBy'],
-        payments: (json['payments'] as List)
-            .map((p) => CurtainPayment.fromJson(p))
-            .toList(),
-      );
+  factory CurtainOrder.fromJson(Map<String, dynamic> json) {
+    // Helper function to parse imageUrls with proper type handling
+    List<String?> parseImageUrls(dynamic input) {
+      if (input == null) return [];
+
+      // If we get a single string
+      if (input is String) return [input];
+
+      // If we get a list
+      if (input is List) {
+        return input.map((item) {
+          // Handle each item in the list
+          if (item is String) return item;
+          return item?.toString(); // Convert other types to string
+        }).toList();
+      }
+
+      // Fallback
+      return [];
+    }
+
+    // Try both 'imageUrls' and 'imageUrl' with the parser
+    var urlData =
+        json.containsKey('imageUrls') ? json['imageUrls'] : json['imageUrl'];
+
+    return CurtainOrder(
+      orderNumber: json['orderNumber'],
+      createdAt: DateTime.parse(json['createdAt']),
+      customerName: json['customerName'],
+      phoneNumber: json['phoneNumber'],
+      materialOwner: json['materialOwner'],
+      curtainType: json['curtainType'],
+      imageUrls: parseImageUrls(urlData),
+      notes: json['notes'],
+      part: json['part'],
+      measurement: json['measurement'],
+      totalAmount: (json['totalAmount'] as num).toDouble(),
+      status: CurtainOrderStatus.values.byName(json['status']),
+      fulfillmentDate: json['fulfillmentDate'] != null
+          ? DateTime.parse(json['fulfillmentDate'])
+          : null,
+      createdBy: json['createdBy'],
+      payments: (json['payments'] as List)
+          .map((p) => CurtainPayment.fromJson(p))
+          .toList(),
+    );
+  }
 }
 
 class CurtainPayment {
@@ -165,70 +190,6 @@ class CurtainPayment {
         ),
         receiptNumber: json['receiptNumber'],
         recordedBy: json['recordedBy'],
-      );
-}
-
-class CurtainItem {
-  String name;
-  String phoneNumber;
-  String materialOwner;
-  String curtainType;
-
-  String? imageUrl;
-  String notes;
-  String part;
-  String measurement;
-  String charges;
-  DateTime orderDate;
-  List<CurtainpaymentEntry> curtainPaymentEntries;
-  DateTime? pickUpDate;
-
-  CurtainItem({
-    required this.name,
-    required this.phoneNumber,
-    required this.materialOwner,
-    required this.curtainType,
-    this.imageUrl,
-    required this.notes,
-    required this.part,
-    required this.measurement,
-    required this.charges,
-    required this.orderDate,
-    this.curtainPaymentEntries = const [],
-    this.pickUpDate,
-  });
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'phoneNumber': phoneNumber,
-        'materialOwner': materialOwner,
-        'notes': notes,
-        'curtainType': curtainType,
-        'imageUrl': imageUrl,
-        'part': part,
-        'measurement': measurement,
-        'charges': charges,
-        'orderDate': orderDate.toIso8601String(),
-        'curtainPaymentEntries':
-            curtainPaymentEntries.map((e) => e.toJson()).toList(),
-        'pickUpDate': pickUpDate?.toIso8601String()
-      };
-  factory CurtainItem.fromJson(Map<String, dynamic> json) => CurtainItem(
-        name: json['name'],
-        phoneNumber: json['phoneNumber'],
-        materialOwner: json['materialOwner'],
-        notes: json['notes'],
-        part: json['part'],
-        measurement: json['measurement'],
-        curtainType: json['curtainType'],
-        imageUrl: json['imageUrl'],
-        charges: json['charges'],
-        orderDate: DateTime.parse(json['orderDate']),
-        curtainPaymentEntries: (json['curtainPaymentEntries'] as List)
-            .map((entry) => CurtainpaymentEntry.fromJson(entry))
-            .toList(),
-        pickUpDate: json['pickUpDate'] != null
-            ? DateTime.parse(json['pickUpDate'])
-            : null,
       );
 }
 
@@ -370,60 +331,6 @@ class CurtainService {
   }
 }
 
-class CurtainManager {
-  static Future<void> saveCurtainItem(
-    List<CurtainItem> curtainItems,
-  ) async {
-    try {
-      const baseDir = 'lib/curtainsales/curtainsstorage';
-      final curtainDirPath = path.join(baseDir);
-      final curtainDir = Directory(curtainDirPath);
-
-      if (!await curtainDir.exists()) {
-        await curtainDir.create(recursive: true);
-        if (await curtainDir.exists()) {
-          print('Curtain directory created');
-        } else {
-          print("Failed to create curtain directory");
-          return;
-        }
-      }
-
-      final filePath = path.join(curtainDirPath, 'curtain.json');
-      final file = File(filePath);
-      final jsonList = curtainItems.map((ci) => ci.toJson()).toList();
-      await file.writeAsString(json.encode(jsonList));
-      print("Curtain item saved");
-    } catch (e) {
-      print('Error saving curtain items: $e');
-      rethrow;
-    }
-  }
-
-  static Future<List<CurtainItem>> loadCurtainItems() async {
-    try {
-      const baseDir = 'lib/curtainsales/curtainsstorage';
-      final curtainDirPath = path.join(baseDir);
-      final filePath = path.join(curtainDirPath, "curtain.json");
-      final file = File(filePath);
-      if (await file.exists()) {
-        final contents = await file.readAsString();
-        final List<dynamic> jsonList = json.decode(contents);
-        final List<CurtainItem> curtainItems = jsonList
-            .map((jsonItems) => CurtainItem.fromJson(jsonItems))
-            .toList();
-        return curtainItems;
-      } else {
-        print('Curtain directory does not exist');
-        return [];
-      }
-    } catch (e) {
-      print('Error loading curtain items: $e');
-      rethrow;
-    }
-  }
-}
-
 class PendingBalance {
   final String customerName;
   final double amount;
@@ -431,19 +338,20 @@ class PendingBalance {
   PendingBalance(this.customerName, this.amount);
 }
 
-double calculateTotalSales(List<CurtainItem> items) {
-  return items.fold(0.0, (sum, item) => sum + double.parse(item.charges));
+double calculateTotalSales(List<CurtainOrder> items) {
+  return items.fold(0.0,
+      (sum, item) => sum + double.parse((item.totalAmount).toStringAsFixed(2)));
 }
 
-Map<String, double> getPaymentTypeBreakdown(List<CurtainItem> items) {
+Map<String, double> getPaymentTypeBreakdown(List<CurtainOrder> items) {
   final breakdown = <String, double>{};
 
   for (var item in items) {
-    for (var payment in item.curtainPaymentEntries) {
+    for (var payment in item.payments) {
       breakdown.update(
-        payment.paymentMethod,
-        (value) => value + double.parse(payment.deposit),
-        ifAbsent: () => double.parse(payment.deposit),
+        payment.method,
+        (value) => value + double.parse((payment.amount).toStringAsFixed(2)),
+        ifAbsent: () => double.parse((payment.amount).toStringAsFixed(2)),
       );
     }
   }
@@ -451,19 +359,20 @@ Map<String, double> getPaymentTypeBreakdown(List<CurtainItem> items) {
   return breakdown;
 }
 
-List<PendingBalance> getPendingBalances(List<CurtainItem> items) {
+List<PendingBalance> getPendingBalances(List<CurtainOrder> items) {
   return items.where((item) {
-    final totalPaid = item.curtainPaymentEntries.fold(
+    final totalPaid = item.payments.fold(
       0.0,
-      (sum, payment) => sum + double.parse(payment.deposit),
+      (sum, payment) => sum + double.parse((payment.amount).toStringAsFixed(2)),
     );
-    return totalPaid < double.parse(item.charges);
+    return totalPaid < double.parse((item.totalAmount).toStringAsFixed(2));
   }).map((item) {
-    final totalPaid = item.curtainPaymentEntries.fold(
+    final totalPaid = item.payments.fold(
       0.0,
-      (sum, payment) => sum + double.parse(payment.deposit),
+      (sum, payment) => sum + double.parse((payment.amount).toStringAsFixed(2)),
     );
-    final balance = double.parse(item.charges) - totalPaid;
-    return PendingBalance(item.name, balance);
+    final balance =
+        double.parse((item.totalAmount).toStringAsFixed(2)) - totalPaid;
+    return PendingBalance(item.customerName, balance);
   }).toList();
 }

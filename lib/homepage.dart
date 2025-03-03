@@ -1000,7 +1000,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => ReceiptPage()),
+                                builder: (context) => const ReceiptPage()),
                           )),
                   ProtectedNavigationButton(
                       text: "Sell Curtains",
@@ -1102,7 +1102,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => AdminDashBoard()))),
+                              builder: (context) => const AdminDashBoard()))),
                   const LogoutButton(),
                   TextButton(
                       onPressed: () => Navigator.push(
@@ -2356,7 +2356,7 @@ class _MyHomePageState extends State<MyHomePage> {
           customerDetails = await showDialog<CustomerDetails>(
             context: context,
             barrierDismissible: false,
-            builder: (context) => CustomerDetailsDialog(),
+            builder: (context) => const CustomerDetailsDialog(),
           );
         }
 
