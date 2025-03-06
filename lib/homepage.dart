@@ -8,6 +8,8 @@ import 'package:gipaw_tailor/contacts/contactspage.dart';
 import 'package:gipaw_tailor/curtainsales/curtainorderform.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsalespage.dart';
 import 'package:gipaw_tailor/curtainsales/curtainsmodel.dart';
+import 'package:gipaw_tailor/labelling/labellingmethod.dart';
+import 'package:gipaw_tailor/labelling/labellingpage.dart';
 import 'package:gipaw_tailor/paymentmethod/mpesa/mpesapage.dart';
 import 'package:gipaw_tailor/receipts/receipts.dart';
 import 'package:gipaw_tailor/receipts/receiptservice.dart';
@@ -1105,11 +1107,16 @@ class _MyHomePageState extends State<MyHomePage> {
                               builder: (context) => const AdminDashBoard()))),
                   const LogoutButton(),
                   TextButton(
-                      onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => ImagePickerExample())),
-                      child: const Text("Image Capture"))
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => LabellingPage()));
+                      },
+                      child: const Text("Labelling")),
+                  TextButton(onPressed: () {}, child: const Text("Logo")),
+                  TextButton(
+                      onPressed: () {}, child: const Text("Legal documents"))
 
                   /*                
                   TextButton(

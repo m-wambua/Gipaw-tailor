@@ -17,33 +17,7 @@ enum CurtainOrderStatus {
 
 enum CurtainPaymentStatus { deposit, partial, finalpayment }
 
-CurtainPaymentStatus _determinePaymentStatus({
-  required double totalAmount,
-  required double currentlyPaid,
-  required double newPaymentAmount,
-}) {
-  final double totalAfterPayment = currentlyPaid + newPaymentAmount;
-  if (currentlyPaid == 0) {
-    return CurtainPaymentStatus.deposit;
-  } else if (totalAfterPayment >= totalAmount) {
-    return CurtainPaymentStatus.finalpayment;
-  } else {
-    return CurtainPaymentStatus.partial;
-  }
-}
 
-CurtainOrderStatus _determineOrderStatus({
-  required double totalAmount,
-  required double totalPaid,
-}) {
-  if (totalPaid >= totalAmount) {
-    return CurtainOrderStatus.paid;
-  } else if (totalPaid > 0) {
-    return CurtainOrderStatus.partial;
-  } else {
-    return CurtainOrderStatus.pending;
-  }
-}
 
 class CurtainOrder {
   final String orderNumber;
