@@ -808,7 +808,7 @@ class _CurtainsalespageState extends State<Curtainsalespage> {
                                           labelText: 'Deposit ${index + 1}',
                                           border: const OutlineInputBorder(),
                                         ),
-                                        keyboardType: TextInputType.number,
+                                     keyboardType: TextInputType.number,
                                         onChanged: (value) {
                                           if (_chargesController
                                               .text.isNotEmpty) {
