@@ -82,30 +82,88 @@ class LabelOrder {
       return [];
     }
 
+    // Helper function to safely parse the status enum
+    LabelOrderStatus parseStatus(dynamic statusValue) {
+      if (statusValue == null) return LabelOrderStatus.pending;
+
+      // Convert to string and handle different formats
+      String statusStr = statusValue.toString();
+
+      // Try to match with the enum name directly (e.g., "pending")
+      try {
+        return LabelOrderStatus.values.firstWhere(
+            (element) => element.toString().split('.').last == statusStr,
+            orElse: () =>
+                LabelOrderStatus.pending // Important: Provide a default value
+            );
+      } catch (e) {
+        print("Error parsing status: $e");
+        return LabelOrderStatus.pending;
+      }
+    }
+
+    // Similar helper for payment status
+    LabellingPaymentStatus parsePaymentStatus(dynamic statusValue) {
+      if (statusValue == null) return LabellingPaymentStatus.deposit;
+
+      String statusStr = statusValue.toString();
+
+      try {
+        return LabellingPaymentStatus.values.firstWhere(
+            (element) => element.toString().split('.').last == statusStr,
+            orElse: () => LabellingPaymentStatus.deposit);
+      } catch (e) {
+        print("Error parsing payment status: $e");
+        return LabellingPaymentStatus.deposit;
+      }
+    }
+
     var urlData =
         json.containsKey('imageUrls') ? json['imageUrls'] : json['imageUrl'];
+    List<String?> processedImageUrls = parseImageUrls(urlData);
+
+    // Safe parsing of payments
+    List<LabelPayment> payments = [];
+    if (json['payments'] != null && json['payments'] is List) {
+      payments = (json['payments'] as List).map((paymentJson) {
+        try {
+          return LabelPayment.fromJson(paymentJson);
+        } catch (e) {
+          print("Error parsing payment: $e");
+          // Return a default payment to avoid crashing
+          return LabelPayment(
+            paymentId: 'error_${DateTime.now().millisecondsSinceEpoch}',
+            amount: 0.0,
+            status: LabellingPaymentStatus.deposit,
+            paymentDate: DateTime.now(),
+            paymentType: 'unknown',
+            recordedBy: 'system',
+          );
+        }
+      }).toList();
+    }
 
     return LabelOrder(
-      orderNumber: json['orderNumber'],
-      createdAt: DateTime.parse(json['createdAt']),
-      customerName: json['customerName'],
-      customerPhoneNumber: json['customerPhoneNumber'],
+      orderNumber: json['orderNumber'] ?? '',
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      customerName: json['customerName'] ?? '',
+      customerPhoneNumber: json['customerPhoneNumber'] ?? '',
       customerEmail: json['customerEmail'],
-      labelType: json['labelType'],
-      imageUrls: List<String>.from(json['imageUrls']),
-      notes: json['notes'],
-      item: json['item'],
-      label: json['label'],
-      totalAmount: json['totalAmount'],
-      payments: (json['payments'] as List)
-          .map((e) => LabelPayment.fromJson(e))
-          .toList(),
-      status: LabelOrderStatus.values
-          .firstWhere((element) => element.toString() == json['status']),
+      labelType: json['labelType'] ?? '',
+      imageUrls: processedImageUrls,
+      notes: json['notes'] ?? '',
+      item: json['item'] ?? '',
+      label: json['label'] ?? '',
+      totalAmount:
+          (json['totalAmount'] is num) ? json['totalAmount'].toDouble() : 0.0,
+      payments: payments,
+      status: parseStatus(json['status']),
       fufillmentDate: json['fufillmentDate'] != null
           ? DateTime.parse(json['fufillmentDate'])
           : null,
-      createdBy: json['createdBy'],
+      createdBy: json['createdBy'] ?? '',
     );
   }
 }
@@ -141,15 +199,33 @@ class LabelPayment {
       };
 
   factory LabelPayment.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely parse the payment status enum
+    LabellingPaymentStatus parsePaymentStatus(dynamic statusValue) {
+      if (statusValue == null) return LabellingPaymentStatus.deposit;
+
+      String statusStr = statusValue.toString();
+
+      try {
+        return LabellingPaymentStatus.values.firstWhere(
+            (element) => element.toString().split('.').last == statusStr,
+            orElse: () => LabellingPaymentStatus.deposit);
+      } catch (e) {
+        print("Error parsing payment status: $e");
+        return LabellingPaymentStatus.deposit;
+      }
+    }
+
     return LabelPayment(
-      paymentId: json['paymentId'],
-      amount: json['amount'],
-      status: LabellingPaymentStatus.values
-          .firstWhere((element) => element.toString() == json['status']),
-      paymentDate: DateTime.parse(json['paymentDate']),
-      paymentType: json['paymentType'],
+      paymentId: json['paymentId'] ??
+          'unknown-${DateTime.now().millisecondsSinceEpoch}',
+      amount: json['amount'] is num ? json['amount'].toDouble() : 0.0,
+      status: parsePaymentStatus(json['status']),
+      paymentDate: json['paymentDate'] != null
+          ? DateTime.parse(json['paymentDate'])
+          : DateTime.now(),
+      paymentType: json['paymentType'] ?? 'unknown',
       receiptNumber: json['receiptNumber'],
-      recordedBy: json['recordedBy'],
+      recordedBy: json['recordedBy'] ?? 'system',
     );
   }
 }
@@ -205,19 +281,38 @@ class LabelService {
     try {
       final prefs = await SharedPreferences.getInstance();
       List<String> orders = prefs.getStringList(_storageKey) ?? [];
-      Map orderJson = order.toJson();
+
+      // Proper typing
+      Map<String, dynamic> orderJson = order.toJson();
+
+      // For debugging
+      print("Saving order: ${order.orderNumber}");
+      print("JSON being saved: ${jsonEncode(orderJson)}");
+
       int existingIndex = orders.indexWhere((orderstr) {
-        Map existing = jsonDecode(orderstr);
-        return existing['orderNumber'] == order.orderNumber;
+        try {
+          Map<String, dynamic> existing =
+              jsonDecode(orderstr) as Map<String, dynamic>;
+          return existing['orderNumber'] == order.orderNumber;
+        } catch (e) {
+          print("Error parsing existing order: $e");
+          return false;
+        }
       });
+
       if (existingIndex >= 0) {
         orders[existingIndex] = jsonEncode(orderJson);
+        print("Updated existing order at index $existingIndex");
       } else {
         orders.add(jsonEncode(orderJson));
+        print("Added new order");
       }
+
       final result = await prefs.setStringList(_storageKey, orders);
+      print("Save result: $result");
       return result;
     } catch (e) {
+      print("Error saving label order: $e");
       return false;
     }
   }
@@ -234,18 +329,46 @@ class LabelService {
   Future<List<LabelOrder>> getAllLabelOrders() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> orders = prefs.getStringList(_storageKey) ?? [];
+
+    print("Found ${orders.length} saved orders");
+
     if (orders.isEmpty) {
       return [];
     }
-    try {
-      List<LabelOrder> parsedOrders = orders.map((orderString) {
-        Map orderMap = jsonDecode(orderString);
-        return LabelOrder.fromJson(orderMap.cast<String, dynamic>());
-      }).toList();
-      return parsedOrders;
-    } catch (e) {
-      rethrow;
+
+    List<LabelOrder> parsedOrders = [];
+
+    for (int i = 0; i < orders.length; i++) {
+      try {
+        String orderString = orders[i];
+        print("Parsing order $i...");
+
+        // Try to parse the JSON string
+        Map<String, dynamic> orderMap =
+            jsonDecode(orderString) as Map<String, dynamic>;
+
+        // Check for critical fields
+        if (!orderMap.containsKey('orderNumber')) {
+          print("Warning: Order $i is missing orderNumber");
+          continue;
+        }
+
+        // Try to create a LabelOrder object
+        LabelOrder order = LabelOrder.fromJson(orderMap);
+        parsedOrders.add(order);
+
+        print("Successfully parsed order ${order.orderNumber}");
+      } catch (e, stackTrace) {
+        // Print both the error and stack trace for better debugging
+        print("Error parsing order $i: $e");
+        print("Stack trace: $stackTrace");
+        // Continue to next order instead of failing
+      }
     }
+
+    print(
+        "Successfully parsed ${parsedOrders.length} out of ${orders.length} orders");
+    return parsedOrders;
   }
 
   double calculateTotalSales(List<LabelOrder> orders) {
@@ -265,22 +388,17 @@ class LabelService {
   }
 
   List<PendingBalanceLabelling> getPendingBalances(List<LabelOrder> orders) {
-    return orders
-        .where((order) => !order.isFullyPaid)
-        .map((order) {
-          final balance = order.remainingBalance;
-          return PendingBalanceLabelling(order.customerName, balance);
-        })
-        .toList();
+    return orders.where((order) => !order.isFullyPaid).map((order) {
+      final balance = order.remainingBalance;
+      return PendingBalanceLabelling(order.customerName, balance);
+    }).toList();
   }
 }
 
-class PendingBalanceLabelling{
+class PendingBalanceLabelling {
   final String customerName;
   final double balance;
   PendingBalanceLabelling(this.customerName, this.balance);
-
-
 }
 
 double calculateTotalSales(List<LabelOrder> orders) {
@@ -288,8 +406,8 @@ double calculateTotalSales(List<LabelOrder> orders) {
       (sum, item) => sum + double.parse((item.totalAmount).toStringAsFixed(2)));
 }
 
-Map<String,double> getPaymentBreakdown(List<LabelOrder> items){
-   final breakdown = <String, double>{};
+Map<String, double> getPaymentBreakdown(List<LabelOrder> items) {
+  final breakdown = <String, double>{};
 
   for (var item in items) {
     for (var payment in item.payments) {
@@ -304,8 +422,8 @@ Map<String,double> getPaymentBreakdown(List<LabelOrder> items){
   return breakdown;
 }
 
-List<PendingBalanceLabelling>  getPendingBalances(List<LabelOrder> items){
-   return items.where((item) {
+List<PendingBalanceLabelling> getPendingBalances(List<LabelOrder> items) {
+  return items.where((item) {
     final totalPaid = item.payments.fold(
       0.0,
       (sum, payment) => sum + double.parse((payment.amount).toStringAsFixed(2)),

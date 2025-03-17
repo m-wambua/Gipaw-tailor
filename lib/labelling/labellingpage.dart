@@ -39,6 +39,11 @@ class _LabellingPageState extends State<LabellingPage> {
 
   List<Uint8List> _multipleImages = [];
   final ImagePicker _picker = ImagePicker();
+  @override
+  void initState() {
+    super.initState();
+    _loadLabelOrders();
+  }
 
   Future _loadLabelOrders() async {
     try {
@@ -46,9 +51,10 @@ class _LabellingPageState extends State<LabellingPage> {
       setState(() {
         labelOrders = loadedLabelOrders;
       });
+      print('Loaded ${labelOrders.length} orders');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error loadinf Label Items")));
+          SnackBar(content: Text("Error loading Label Items ${e} ")));
     }
   }
 
@@ -519,14 +525,39 @@ class _LabellingPageState extends State<LabellingPage> {
       _chargesController.text = totalCharge.toString();
 
       for (var paymentPair in paymentPairs) {
-        if (paymentPair['deposit'].text.isNotEmpty) {
-          paymentPair['balance'].text = LabelPaymentEntry.calculateBalance(
-              _chargesController.text, paymentPair['deposit'].text);
+        if (paymentPair['deposit'].text.isNotEmpty &&
+            _chargesController.text.isNotEmpty) {
+          try {
+            double charges = double.parse(_chargesController.text);
+            double deposit = double.parse(paymentPair['deposit'].text);
+            double balance = charges - deposit;
+            paymentPair['balance'].text = balance.toStringAsFixed(2);
+          } catch (e) {
+            print("Error calculating balance: $e");
+          }
         }
       }
     }
 
     final paymentTypes = ['Cash', 'Card', 'Mobile Money'];
+
+    LabelOrder currentOrder = existingOrder ??
+        LabelOrder(
+          orderNumber: '',
+          createdAt: DateTime.now(),
+          customerName: '',
+          customerPhoneNumber: '',
+          labelType: '',
+          notes: '',
+          item: '',
+          label: '',
+          totalAmount: 0.0,
+          payments: [],
+          createdBy: getCurrentUser(),
+          fufillmentDate: DateTime.now(),
+          status: LabelOrderStatus.pending,
+          imageUrls: [], // Ensure this is initialized
+        );
     await showDialog(
         context: context,
         builder: (BuildContext dialogContext) {
@@ -538,6 +569,7 @@ class _LabellingPageState extends State<LabellingPage> {
               content: SizedBox(
                 width: double.infinity,
                 child: Form(
+                  key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -822,7 +854,7 @@ class _LabellingPageState extends State<LabellingPage> {
                           child: const Text('Cancel')),
                       ElevatedButton(
                           onPressed: () async {
-                            if (formKey.currentState!.validate()) {
+                            if (formKey.currentState?.validate() ?? false) {
                               try {
                                 final String orderNumber =
                                     LabelService().generateOrderNumber();
@@ -946,7 +978,7 @@ class _LabellingPageState extends State<LabellingPage> {
                       context: context,
                       initialDate: selectedDate,
                       firstDate: DateTime(2020),
-                      lastDate: DateTime(2025),
+                      lastDate: DateTime(2099),
                     );
                     if (pickedDate != null && pickedDate != selectedDate) {
                       selectedDate = pickedDate;
