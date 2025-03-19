@@ -22,6 +22,7 @@ import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
 import 'package:gipaw_tailor/signinpage/signuppage.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
+import 'package:gipaw_tailor/uniformorderdirective/uniformorder.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesitems.dart';
 import 'package:gipaw_tailor/uniforms/sales/salesviewer.dart';
 import 'package:gipaw_tailor/uniforms/stock/stocktable.dart';
@@ -1116,7 +1117,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: const Text("Labelling")),
                   TextButton(onPressed: () {}, child: const Text("Logo")),
                   TextButton(
-                      onPressed: () {}, child: const Text("Legal documents"))
+                      onPressed: () {}, child: const Text("Legal documents")),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => UniformOrderDirective()));
+                      },
+                      child: Text("Uniform Order Directive"))
 
                   /*                
                   TextButton(
