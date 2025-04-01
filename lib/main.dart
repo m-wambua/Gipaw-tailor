@@ -4,6 +4,7 @@ import 'package:gipaw_tailor/homepage.dart';
 import 'package:gipaw_tailor/signinpage/admindash.dart';
 import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
+import 'package:gipaw_tailor/uniformorderdirective/orderauthorization.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,7 +14,6 @@ const String IS_FIRST_RUN_KEY = 'is_first_run';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
 
   // Check if it's the first run
   final prefs = await SharedPreferences.getInstance();
@@ -33,6 +33,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => OrdersProvider())
       ],
       child: MaterialApp(
         title: 'Gipaw Tailor',

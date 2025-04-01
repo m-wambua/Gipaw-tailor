@@ -578,7 +578,7 @@ class PendingOrderTab extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 12),
-                      Text('Customer: ${order.tailorName}'),
+                      Text('Tailor: ${order.tailorName}'),
                       Text(
                           'Due: ${DateFormat('MMM dd, yyyy').format(order.scheduledDate)} at ${order.scheduledTime.format(context)}'),
                       Text('Urgency: ${order.urgencyLevel.label}'),
@@ -845,10 +845,218 @@ class PendingOrderTab extends StatelessWidget {
 }
 
 class WaitingApprovalTab extends StatelessWidget {
-  const WaitingApprovalTab({super.key});
+  const WaitingApprovalTab({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Consumer<OrdersProvider>(
+      builder: (context, orderProvider, child) {
+        final completedOrders = orderProvider.completedPendingApprovalOrders;
+
+        if (completedOrders.isEmpty) {
+          return Center(child: Text('No orders pending approval'));
+        }
+
+        return ListView.builder(
+          padding: EdgeInsets.all(16),
+          itemCount: completedOrders.length,
+          itemBuilder: (context, index) {
+            final order = completedOrders[index];
+
+            return GestureDetector(
+              onTap: () => _showApprovalDialog(context, order),
+              child: Card(
+                margin: EdgeInsets.only(bottom: 16),
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Order #${order.id}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          _buildStatusChip(order.status),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Text('Customer: ${order.tailorName}'),
+                      Text(
+                          'Completed on: ${DateFormat('MMM dd, yyyy').format(order.completionDate!)}'),
+                      SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: order.completionPerentage / 100,
+                        backgroundColor: Colors.grey[300],
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Completion: ${order.totalCompletedQuantity}/${order.totalOrderQuantity} (${order.completionPerentage.toStringAsFixed(1)}%)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      SizedBox(height: 8),
+                      Divider(),
+                      SizedBox(height: 8),
+                      Text('Completed Items:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      ...order.completedItems.map(
+                        (item) => Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${item.quantity}x ${item.uniformName} (${item.size}, ${item.color})',
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'Tap to approve',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Show dialog for approving an order
+  void _showApprovalDialog(BuildContext context, UniformOrder order) {
+    final priceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Approve Order'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Order #${order.id}'),
+                SizedBox(height: 16),
+                Text('Completion Summary:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                    '${order.totalCompletedQuantity} of ${order.totalOrderQuantity} items completed (${order.completionPerentage.toStringAsFixed(1)}%)'),
+                SizedBox(height: 16),
+                TextField(
+                  controller: priceController,
+                  decoration: InputDecoration(
+                    labelText: 'Final Price',
+                    prefixText: '\$',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (priceController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter the final price')),
+                  );
+                  return;
+                }
+
+                final price = double.tryParse(priceController.text);
+                if (price == null || price <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a valid price')),
+                  );
+                  return;
+                }
+
+                // Approve the order
+                final ordersProvider =
+                    Provider.of<OrdersProvider>(context, listen: false);
+                ordersProvider.approvedOrder(order.id, price);
+
+                // Update uniform stock data
+                //  ordersProvider.updateUni(order);
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Order approved successfully')),
+                );
+              },
+              child: Text('Approve'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusChip(OrderStatus status) {
+    Color chipColor;
+    String label;
+
+    switch (status) {
+      case OrderStatus.pending:
+        chipColor = Colors.orange;
+        label = 'Pending';
+        break;
+      case OrderStatus.partiallyCompleted:
+        chipColor = Colors.amber;
+        label = 'Partial';
+        break;
+      case OrderStatus.completedPendingApproval:
+        chipColor = Colors.lightBlue;
+        label = 'Completed';
+        break;
+      case OrderStatus.approvedAndVerified:
+        chipColor = Colors.green;
+        label = 'Approved';
+        break;
+      default:
+        throw Exception('Invalid OrderStatus: $status');
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.2),
+        border: Border.all(color: chipColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: chipColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
   }
 }
 
