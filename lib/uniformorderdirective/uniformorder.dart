@@ -4,6 +4,7 @@ import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
 import 'package:gipaw_tailor/uniformorderdirective/orderauthorization.dart';
+import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 import 'package:gipaw_tailor/uniforms/uniforms_data.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -135,11 +136,16 @@ class _UniformOrderDirectiveState extends State<UniformOrderDirective>
                                                         ['availableSizes'] =
                                                     uniformItemData[newValue]![
                                                         'sizes']!;
-
+                                                entries[index]
+                                                        ['availablePrizes'] =
+                                                    uniformItemData[newValue]![
+                                                        'prizes']!;
                                                 entries[index]
                                                     ['selectedColor'] = null;
                                                 entries[index]['selectedSize'] =
                                                     null;
+                                                entries[index]
+                                                    ['selectedPrize'] = null;
                                               });
                                             },
                                             value: entries[index]
@@ -222,6 +228,34 @@ class _UniformOrderDirectiveState extends State<UniformOrderDirective>
                                             return null;
                                           },
                                         )),
+                                        SizedBox(
+                                          width: 10,
+                                        ),
+                                        Expanded(
+                                          child:
+                                              DropdownButtonFormField<String>(
+                                            decoration: const InputDecoration(
+                                                labelText: "Unit Prize"),
+                                            items: entries[index]
+                                                    ['availablePrizes']
+                                                .map<DropdownMenuItem<String>>(
+                                                    (prize) {
+                                              return DropdownMenuItem<String>(
+                                                value: prize,
+                                                child: Text(prize),
+                                              );
+                                            }).toList(),
+                                            onChanged: (String? newValue) {
+                                              setState(() {
+                                                entries[index]
+                                                        ['selectedPrize'] =
+                                                    newValue;
+                                              });
+                                            },
+                                            value: entries[index]
+                                                ['selectedPrize'],
+                                          ),
+                                        ),
                                         IconButton(
                                             onPressed: () => _removeEntry(
                                                 entries, index, setState),
@@ -513,8 +547,10 @@ class _UniformOrderDirectiveState extends State<UniformOrderDirective>
         'selectedUniformItem': null,
         'selectedColor': null,
         'selectedSize': null,
+        'selectedPrize': null,
         'availableColors': [],
         'availableSizes': [],
+        'availablePrizes': [],
         'numberController': TextEditingController(),
       });
     });
@@ -940,77 +976,240 @@ class WaitingApprovalTab extends StatelessWidget {
     );
   }
 
-  // Show dialog for approving an order
   void _showApprovalDialog(BuildContext context, UniformOrder order) {
-    final priceController = TextEditingController();
+    // Create a map to store prices for each item
+    final Map<String, List<int>> availablePrices = {};
+    int? selectedPrice;
+    final stockManager = StockManager('lib/uniforms/stock/stock.json');
+
+    // Load available prices for completed items
+    Future<void> loadAvailablePrices() async {
+      // Make sure stock data is loaded
+      await stockManager.reloadStock();
+
+      // Get all stock items
+      final stockItems = stockManager.currentStock;
+
+      // Gather all unique prices for completed items
+      for (var item in order.completedItems) {
+        final String itemKey = "${item.uniformName}_${item.color}_${item.size}";
+
+        try {
+          // Find matching stock items - there might be multiple with different prices
+          final matchingItems = stockItems
+              .where(
+                (stockItem) =>
+                    stockItem.uniformItem == item.uniformName &&
+                    stockItem.color == item.color &&
+                    stockItem.size == item.size,
+              )
+              .toList();
+
+          // Extract prices
+          List<int> prices =
+              matchingItems.map((item) => item.price).toSet().toList();
+          if (prices.isNotEmpty) {
+            availablePrices[itemKey] = prices;
+          }
+        } catch (e) {
+          print(
+              'Warning: No price options found for ${item.uniformName} (${item.color}, ${item.size})');
+        }
+      }
+    }
+
+    // Calculate total price based on selected price
+    int calculateTotalPrice() {
+      if (selectedPrice == null) return 0;
+
+      // Simply multiply the selected unit price by total quantity
+      return selectedPrice! * order.totalCompletedQuantity;
+    }
+
+    // Prepare data for stock upload
+    List<Map<String, dynamic>> prepareStockEntries() {
+      List<Map<String, dynamic>> entries = [];
+
+      for (var item in order.completedItems) {
+        entries.add({
+          'selectedUniformItem': item.uniformName,
+          'selectedColor': item.color,
+          'selectedSize': item.size,
+          'numberController':
+              TextEditingController(text: item.quantity.toString()),
+          'selectedPrize': selectedPrice,
+          'calculatedPrice': selectedPrice! * item.quantity,
+        });
+      }
+
+      return entries;
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Approve Order'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Order #${order.id}'),
-                SizedBox(height: 16),
-                Text('Completion Summary:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                    '${order.totalCompletedQuantity} of ${order.totalOrderQuantity} items completed (${order.completionPerentage.toStringAsFixed(1)}%)'),
-                SizedBox(height: 16),
-                TextField(
-                  controller: priceController,
-                  decoration: InputDecoration(
-                    labelText: 'Final Price',
-                    prefixText: '\$',
-                    border: OutlineInputBorder(),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return FutureBuilder(
+              future: loadAvailablePrices(),
+              builder: (context, snapshot) {
+                // Gather all unique prices across all items
+                List<int> allPrices = [];
+                availablePrices.values.forEach((priceList) {
+                  allPrices.addAll(priceList);
+                });
+                allPrices = allPrices.toSet().toList()..sort();
+
+                return AlertDialog(
+                  title: Text('Approve Order'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Order #${order.id}'),
+                        SizedBox(height: 16),
+                        Text('Completion Summary:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                            '${order.totalCompletedQuantity} of ${order.totalOrderQuantity} items completed (${order.completionPerentage.toStringAsFixed(1)}%)'),
+                        SizedBox(height: 16),
+                        Text('Completed Items:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        ...order.completedItems.map(
+                          (item) => Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: Text(
+                              '${item.quantity}x ${item.uniformName} (${item.size}, ${item.color})',
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+
+                        // Price selection dropdown
+                        snapshot.connectionState == ConnectionState.done
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Select Unit Price:',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  DropdownButtonFormField<int>(
+                                    decoration: InputDecoration(
+                                      labelText: "Unit Price",
+                                      prefixText: "\$",
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    value: selectedPrice,
+                                    items: allPrices.map((price) {
+                                      return DropdownMenuItem<int>(
+                                        value: price,
+                                        child: Text("\$${price.toString()}"),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedPrice = value;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null) {
+                                        return 'Please select a price';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: 8),
+                                  if (selectedPrice != null)
+                                    Text(
+                                      'Total Price: \$${calculateTotalPrice()}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Center(
+                                child: Column(
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 8),
+                                    Text('Loading price options...'),
+                                  ],
+                                ),
+                              ),
+                      ],
+                    ),
                   ),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (priceController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter the final price')),
-                  );
-                  return;
-                }
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: selectedPrice == null
+                          ? null // Disable button if no price selected
+                          : () async {
+                              // Prepare stock entries
+                              final stockEntries = prepareStockEntries();
 
-                final price = double.tryParse(priceController.text);
-                if (price == null || price <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please enter a valid price')),
-                  );
-                  return;
-                }
+                              // Upload to stock
+                              try {
+                                // Add to parent stock entry
+                                // You mentioned this was supposed to be included:
+                                // ordersProvider.addToParentStockEntry(completed);
 
-                // Approve the order
-                final ordersProvider =
-                    Provider.of<OrdersProvider>(context, listen: false);
-                ordersProvider.approvedOrder(order.id, price);
+                                // Approve the order with calculated total price
+                                final ordersProvider =
+                                    Provider.of<OrdersProvider>(context,
+                                        listen: false);
+                                ordersProvider.approvedOrder(
+                                    order.id, calculateTotalPrice().toDouble());
 
-                // Update uniform stock data
-                //  ordersProvider.updateUni(order);
+                                // Add to stock
+                                await stockManager.addNewStock(stockEntries);
 
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Order approved successfully')),
+                                Navigator.of(context).pop();
+
+                                // Show success message
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        CircularProgressIndicator.adaptive(),
+                                        SizedBox(width: 10),
+                                        Text("Updating Stock...")
+                                      ],
+                                    ),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        "Order approved and stock updated successfully"),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        "Error: Failed to update stock: $e"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
+                      child: Text('Approve'),
+                    ),
+                  ],
                 );
               },
-              child: Text('Approve'),
-            ),
-          ],
+            );
+          },
         );
       },
     );

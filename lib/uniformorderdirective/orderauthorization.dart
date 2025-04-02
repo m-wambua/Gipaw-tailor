@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/uniformorderdirective/uniformorder.dart';
+import 'package:gipaw_tailor/uniforms/stockmanager.dart';
 
 class UniformOrder {
   final String id;
@@ -150,5 +151,10 @@ class OrdersProvider with ChangeNotifier {
       _orders[orderIndex].approveOrder(price);
       notifyListeners();
     }
+  }
+
+  void addToParentStockEntry(List<Map<String, dynamic>> entries) async {
+    final stockManager = StockManager('lib/uniforms/stock/stock.json');
+    stockManager.addNewStock(entries);
   }
 }
