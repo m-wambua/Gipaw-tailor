@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/homepage.dart';
@@ -5,6 +7,7 @@ import 'package:gipaw_tailor/signinpage/admindash.dart';
 import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/signinpage.dart';
 import 'package:gipaw_tailor/uniformorderdirective/orderauthorization.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,25 +17,53 @@ const String IS_FIRST_RUN_KEY = 'is_first_run';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  bool isFirstRun = true;
+  try {
+    final directory = await getApplicationDocumentsDirectory();
+    final adminConfigFile = File('${directory.path}/admin_config.json');
+    isFirstRun = !(await adminConfigFile.exists());
+  } catch (e) {
+    print("Error checking admin config: $e");
+    isFirstRun = true;
+  }
 
-  // Check if it's the first run
-  final prefs = await SharedPreferences.getInstance();
-  final isFirstRun = prefs.getBool(IS_FIRST_RUN_KEY) ?? true;
-  AuthProvider();
+  // Create AuthProvider to initialize data
+  final authProvider = AuthProvider();
 
-  runApp(MyApp(isFirstRun: isFirstRun));
+  // Register a shutdown hook for clean app closure if possible
+  // Note: This depends on platform capabilities and may not be ideal
+  // Consider alternative approaches for production
+  WidgetsBinding.instance.addObserver(AppLifecycleObserver(authProvider));
+
+  runApp(MyApp(isFirstRun: isFirstRun, authProvider: authProvider));
+}
+
+class AppLifecycleObserver extends WidgetsBindingObserver {
+  final AuthProvider authProvider;
+
+  AppLifecycleObserver(this.authProvider);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached ||
+        state == AppLifecycleState.paused) {
+      authProvider.recordNormalShutdown();
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {
   final bool isFirstRun;
+  final AuthProvider authProvider;
 
-  const MyApp({super.key, required this.isFirstRun});
+  const MyApp(
+      {super.key, required this.isFirstRun, required this.authProvider});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => OrdersProvider())
       ],
       child: MaterialApp(
@@ -151,42 +182,34 @@ class _AdminSetupPageState extends State<AdminSetupPage> {
     );
   }
 
-  Future<void> _setupAdmin() async {
-    if (!_formKey.currentState!.validate()) return;
+ Future<void> _setupAdmin() async {
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
+  try {
+    // Initialize admin user in AuthProvider using JSON files
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.initializeAdmin(
+      username: _usernameController.text,
+      password: _passwordController.text,
+    );
 
-      // Store admin credentials
-      await prefs.setString(ADMIN_USERNAME_KEY, _usernameController.text);
-      await prefs.setString(ADMIN_PASSWORD_KEY, _passwordController.text);
-      await prefs.setBool(IS_FIRST_RUN_KEY, false);
-
-      // Initialize admin user in AuthProvider
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.initializeAdmin(
-        username: _usernameController.text,
-        password: _passwordController.text,
-      );
-
-      // Navigate to sign in page
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SignInPage()),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error setting up admin account'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    // Navigate to sign in page
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const SignInPage()),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error setting up admin account: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  } finally {
+    setState(() => _isLoading = false);
   }
-
+}
   @override
   void dispose() {
     _usernameController.dispose();

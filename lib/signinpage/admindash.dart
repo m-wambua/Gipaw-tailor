@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:gipaw_tailor/signinpage/authorization.dart';
 import 'package:gipaw_tailor/signinpage/protectedroutes.dart';
 import 'package:gipaw_tailor/signinpage/users.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -252,34 +254,39 @@ class ActiveUsersTab extends StatelessWidget {
   ActiveUsersTab({super.key});
 
   // Helper method to check if a user is currently active
+  // In ActiveUsersTab class:
   bool isUserActive(String username, List<UserActivity> activities) {
-    // Sort activities by timestamp in descending order
-    final userActivities = activities
-        .where((activity) => activity.username == username)
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    // Get only activities for this user
+    final userActivities =
+        activities.where((activity) => activity.username == username).toList();
 
-    // If user has no activities, they're not active
     if (userActivities.isEmpty) return false;
 
-    // Check if their most recent activity was a login
-    return userActivities.first.actionType.toLowerCase() == 'login';
+    // Sort by timestamp (newest first)
+    userActivities.sort((a, b) =>
+        DateTime.parse(b.timestamp).compareTo(DateTime.parse(a.timestamp)));
+
+    // Check if most recent activity is a login
+    return userActivities.first.actionType.toLowerCase().contains('login') &&
+        !userActivities.first.actionType.toLowerCase().contains('logout');
   }
 
-  // Get unique users from activity log
   List<String> getActiveUsers(List<UserActivity> activities) {
-    final uniqueUsers = activities
-        .map((activity) => activity.username)
-        .toSet()
+    // Get all unique usernames
+    final allUsernames =
+        activities.map((activity) => activity.username).toSet().toList();
+
+    // Filter to only active users
+    return allUsernames
         .where((username) => isUserActive(username, activities))
         .toList();
-    return uniqueUsers;
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final activities = authProvider.userActivities;
+
     final activeUsers = getActiveUsers(activities);
 
     return Column(
@@ -449,7 +456,8 @@ class ActiveUsersTab extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
               title: const Text("Delete Account"),
-              content: const Text("Are you sure you want to delete your account?"),
+              content:
+                  const Text("Are you sure you want to delete your account?"),
               actions: [
                 TextButton(
                     onPressed: () async {
@@ -458,7 +466,8 @@ class ActiveUsersTab extends StatelessWidget {
                     },
                     child: const Text("Yes")),
                 TextButton(
-                    onPressed: () => Navigator.pop(context), child: const Text("No")),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("No")),
               ],
             ));
   }
@@ -579,7 +588,8 @@ class UserActivityTab extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final activity = activities[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: _getActionColor(activity.actionType)
@@ -594,7 +604,8 @@ class UserActivityTab extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 activity.username,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                             Text(
@@ -643,22 +654,37 @@ class UserActivity {
       timestamp: json['timestamp'],
       actionType: json['actionType']);
 
+  // In UserActivity class
   static Future<void> saveActivities(List<UserActivity> activities) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonActivities =
-        activities.map((activity) => activity.toJson()).toList();
-    await prefs.setStringList('user_activities',
-        jsonActivities.map((activity) => json.encode(activity)).toList());
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/user_activities.json');
+      final jsonActivities =
+          activities.map((activity) => activity.toJson()).toList();
+      await file.writeAsString(json.encode(jsonActivities));
+      print("Static method: Saved ${activities.length} activities");
+    } catch (e) {
+      print("Error in static saveActivities: $e");
+    }
   }
 
   static Future<List<UserActivity>> loadActivities() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedActivities = prefs.getStringList('user_activities') ?? [];
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/user_activities.json');
 
-    return savedActivities.map((jsonString) {
-      final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      return UserActivity.fromJson(jsonMap);
-    }).toList();
+      if (await file.exists()) {
+        final jsonString = await file.readAsString();
+        if (jsonString.isNotEmpty) {
+          final List<dynamic> jsonList = json.decode(jsonString);
+          return jsonList.map((json) => UserActivity.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print("Error in static loadActivities: $e");
+      return [];
+    }
   }
 
   static Future<void> maintainActivityLog(List<UserActivity> activities,
@@ -733,7 +759,8 @@ class UserTab extends StatelessWidget {
                                   context: context,
                                   builder: (BuildContext context) {
                                     return AlertDialog(
-                                      title: const Text("Send Password Reset Email?"),
+                                      title: const Text(
+                                          "Send Password Reset Email?"),
                                       content: Text(
                                           "This will send a password reset link to ${user.email}. Continue?"),
                                       actions: [
